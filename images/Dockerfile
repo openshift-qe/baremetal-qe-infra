@@ -1,7 +1,7 @@
 # This Dockerfile builds the image used by baremetal qe installation tests
 FROM registry.ci.openshift.org/ocp/4.12:cli
 ENV HOME /output
-RUN INSTALL_PKGS="ansible openssh rsync wget bc file findutils git hostname lsof make \
+RUN set -x; INSTALL_PKGS="ansible openssh rsync wget bc file findutils git hostname lsof make \
       socat tar tree util-linux wget which zip curl gawk iputils jq iproute ca-certificates \
       nmap-ncat socat mtr bash net-tools bind-utils iperf3 tcpdump procps conntrack-tools \
       iputils ethtool strace ipmitool butane" && \
@@ -15,5 +15,5 @@ RUN wget -O /usr/local/bin/yq \
   chmod +x /usr/local/bin/yq && \
   ansible-galaxy collection install -vvvv community.docker community.general && \
   chmod -R g=u "${HOME}/.ansible/" && \
-  INSTALL_PYTHON3_PKGS="netaddr" && \
+  INSTALL_PYTHON3_PKGS="netaddr junos-eznc" && \
   pip3 install $INSTALL_PYTHON3_PKGS
