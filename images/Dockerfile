@@ -18,4 +18,4 @@ RUN wget -O /usr/local/bin/yq \
   ansible-galaxy collection install -vvvv community.docker community.general && \
   chmod -R g=u "${HOME}/.ansible/" && \
   INSTALL_PYTHON3_PKGS="netaddr junos-eznc" && \
-  pip3 install $INSTALL_PYTHON3_PKGS
+  pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS
