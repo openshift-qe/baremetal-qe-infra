@@ -191,3 +191,5 @@ cython_debug/
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# iDRAC credentials
+idrac_vars.yaml

@@ -1,0 +1,17 @@
+idrac:
+  hosts:
+      openshift-qe-047-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-048-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-049-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-050-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-051-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-052-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-053-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-054-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-055-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-056-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-057-drac.mgmt.arm.eng.rdu2.redhat.com:
+      openshift-qe-058-drac.mgmt.arm.eng.rdu2.redhat.com:
+  vars:
+    nic_baremetal: "NIC.Integrated.1-2-1" # ref: https://issues.redhat.com/browse/OCPQE-14115
+    nic_provisioning: "NIC.Integrated.1-3-1"

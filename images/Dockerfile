@@ -15,7 +15,14 @@ RUN wget -O /usr/local/bin/yq \
   chmod +x /usr/local/bin/yq && \
   pip3 install setuptools-rust && \
   pip3 install --upgrade pip && \
-  ansible-galaxy collection install -vvvv community.docker community.general && \
+  ansible-galaxy collection install -vvvv community.docker community.general dellemc.openmanage && \
   chmod -R g=u "${HOME}/.ansible/" && \
-  INSTALL_PYTHON3_PKGS="netaddr junos-eznc" && \
-  pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS
+  INSTALL_PYTHON3_PKGS="netaddr junos-eznc wheel" && \
+  pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS && \
+  git clone https://github.com/dell/omsdk.git /tmp/omsdk && \
+  cd /tmp/omsdk && \
+  pip3 install -r requirements-python3x.txt && \
+  sh build.sh 1.2 503 && \
+  cd dist && \
+  pip3 install omsdk-1.2.503-py2.py3-none-any.whl
+
