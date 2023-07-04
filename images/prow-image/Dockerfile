@@ -4,7 +4,7 @@ ENV HOME /output
 RUN set -x; INSTALL_PKGS="ansible openssh rsync wget bc file findutils git hostname lsof make \
       socat tar tree util-linux wget which zip curl gawk iputils jq iproute ca-certificates \
       nmap-ncat socat mtr bash net-tools bind-utils iperf3 tcpdump procps conntrack-tools \
-      iputils ethtool strace ipmitool butane libvirt-client nmstate" && \
+      iputils ethtool strace ipmitool butane libvirt-client nmstate coreos-installer" && \
   mkdir -p ${HOME} && \
   yum install --setopt=install_weak_deps=False --nodocs -y $INSTALL_PKGS && \
   yum clean all && \
