@@ -1,0 +1,7 @@
+FROM quay.io/openshifttest/base-alpine:multiarch
+
+RUN apk add --no-cache dnsmasq
+
+COPY /usr/share/bastion_services/dhcp/dnsmasq.conf /etc/dnsmasq.conf
+COPY /usr/share/bastion_services/dhcp/tftpboot /var/lib/tftpboot
+CMD ["dnsmasq", "--keep-in-foreground", "--no-daemon"]

@@ -1,0 +1,22 @@
+[Unit]
+Description=Creates a dnsmasq container for dhcp and tftpboot
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=-/usr/bin/podman stop dhcpv1
+ExecStartPre=-/usr/bin/podman rm dhcpv1
+ExecStartPre=/usr/bin/podman build -f /images/dhcp/Containerfile -t dhcp:v1
+ExecStart=/usr/bin/podman run -d --network host --cap-add=NET_ADMIN --cap-add=NET_RAW --name dhcpv1 dhcp:v1
+ExecStop=/usr/bin/podman stop dhcpv1
+ExecStopPost=/usr/bin/podman rm dhcpv1
+Type=one-shot
+RemainAfterExit=yes
+KillMode=none
+
+[Install]
+WantedBy=default.target
