@@ -1,0 +1,27 @@
+variant: fcos
+version: 1.5.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys_local:
+        - authorized_keys
+systemd:
+  units:
+    - name: wipe-disks.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Wipe the disks
+        OnFailure=emergency.target
+        OnFailureJobMode=replace-irreversibly
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStart=bash -c 'for i in $(lsblk -I8 -nd --output name); do dd if=/dev/zero of=/dev/$i bs=1M count=16; done'
+        ExecStart=bash -c '/usr/sbin/efibootmgr -v | sed -nE "s|^Boot([0-9A-Fa-f]{4}).*HD\(.*$|\1|gp" | xargs -I% /usr/sbin/efibootmgr --delete-bootnum --bootnum %'
+        ExecStart=/usr/bin/systemctl --no-block poweroff
+        StandardOutput=kmsg+console
+        StandardError=kmsg+console
+        [Install]
+        RequiredBy=default.target

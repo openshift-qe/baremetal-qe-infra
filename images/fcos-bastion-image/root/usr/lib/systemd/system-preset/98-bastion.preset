@@ -4,3 +4,5 @@ enable poc-registry@registry6001.service
 enable poc-registry@registry6002.service
 enable nginx.service
 enable bind9.service
+enable fcos-download.timer
+enable dhcp.service

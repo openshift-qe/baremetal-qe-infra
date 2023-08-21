@@ -1,0 +1,7 @@
+[Unit]
+Description=Service downloads latest fcos
+
+[Service]
+EnvironmentFile=/usr/share/bastion_services/dhcp/dhcp_systemd.conf
+Type=oneshot
+ExecStart=/bin/bash -c '/usr/bin/fcos-download.sh'
