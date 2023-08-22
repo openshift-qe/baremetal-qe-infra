@@ -12,6 +12,9 @@ RUN set -x; arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'); cat /etc/
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm \
     && ostree container commit
 
+# Replacing nfs-utils-coreos with nfs-utils as some required packages (e.g., libvirt) depend on it: see coreos/fedora-coreos-tracker#572
+RUN rpm-ostree uninstall nfs-utils-coreos && rpm-ostree install nfs-utils && ostree container commit
+
 RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iputils iproute mtr nethogs socat"; \
     rpm-ostree install $PACKAGES_INSTALL && ostree container commit
 
