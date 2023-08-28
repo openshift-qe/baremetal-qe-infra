@@ -193,4 +193,4 @@ cython_debug/
 idrac_vars.yaml
 
 # Personal containerfiles used for local testing
-**/Containerfile.**
+tmp.Containerfile
