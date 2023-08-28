@@ -1,1 +1,5 @@
 FROM quay.io/openshifttest/fcos-bm:base
+
+COPY root/ /
+
+RUN set -x; systemctl preset-all 
