@@ -16,8 +16,7 @@ Bootstrap a node with a fedora coreos boot image. Then, install coreos and set t
 After the reboot, you can rebase the OS to the fcos-base-image, executing as root:
 
 ```bash
-rpm-ostree rebase ostree-unverfied-registry:quay.io/org/fcos-base-image:latest --bypass-driver
-systemctl reboot
+rpm-ostree rebase ostree-unverified-registry:quay.io/org/fcos-base-image:latest --bypass-driver --reboot
 ```
 
 ## Structure of the image definition
@@ -30,3 +29,9 @@ When possible, prefer not to change the `/etc` files, but the ones in `/usr/`. T
 managed by rpm-ostree through a three-way merge, and any files modified by the user will not be updated by rpm-ostree
 when the OS is updated.
 
+The directories `/etc` and `/var` are mounted as read-write which lets users write and modify files.
+
+The directory `/etc` may be changed by deployments, but will not override user made changes. 
+
+The content under `/var` is left untouched by rpm-ostree when applying upgrades or rollbacks, 
+don't use it to store Container image files.

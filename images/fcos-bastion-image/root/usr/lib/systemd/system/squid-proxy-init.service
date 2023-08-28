@@ -1,0 +1,23 @@
+[Unit]
+Description=Prepare the squid proxy container configuration
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+ConditionPathExists=!/var/.squid-configured
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=/usr/share/bastion_services/squid/squid_systemd.conf
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/%n.ctr-id
+ExecStartPre=-/bin/sh -c '/usr/bin/mkdir -p ${PODMAN_SQUID_BASEDIR}/{cache,log,etc,lib}'
+ExecStartPre=-/bin/sh -c 'cp /usr/share/bastion_services/squid/*.conf ${PODMAN_SQUID_BASEDIR}/etc/'
+ExecStartPre=-/bin/sh -c '/usr/bin/podman run --rm --interactive --user ${PODMAN_SQUID_UID} -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" ${PODMAN_SQUID_IMAGE} bash < /usr/share/bastion_services/squid/create_ssl_db.sh'
+ExecStartPre=-/bin/sh -c '/usr/bin/chown -R ${PODMAN_SQUID_UID}:${PODMAN_SQUID_UID} ${PODMAN_SQUID_BASEDIR}'
+ExecStart=/bin/touch /var/.squid-configured
+Type=one-shot
+RemainAfterExit=no
+
+[Install]
+WantedBy=default.target
