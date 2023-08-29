@@ -1,0 +1,22 @@
+[Unit]
+Description=Prepare dnsmasq configuration for dhcp service
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+ConditionPathExists=!/var/.dhcp-configured
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=/usr/share/bastion_services/dhcp/dnsmasq_systemd.conf
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/%n.ctr-id
+ExecStartPre=/bin/sh -c 'cp ${LOCAL_DNSMASQ_DIR}/dnsmasq.conf ${PODMAN_DNSMASQ_BASEDIR}/etc/'
+ExecStartPre=/bin/sh -c 'cp ${LOCAL_DNSMASQ_DIR}/tftpboot/grub.cfg ${PODMAN_DNSMASQ_BASEDIR}/tftpboot/'
+ExecStartPre=/bin/sh -c '/usr/bin/dnsmasq-init.sh | tee ${PODMAN_DNSMASQ_BASEDIR}/dnsmasq-init.log 2>&1'
+ExecStart=/bin/touch /var/.dhcp-configured
+Type=one-shot
+RemainAfterExit=no
+
+[Install]
+WantedBy=default.target

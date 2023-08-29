@@ -1,7 +1,8 @@
-FROM quay.io/openshifttest/base-alpine:multiarch
+# Image is built with this Containerfile at quay.io/sgoveas/dnsmasq:1.0
+# Later prow will build the image and would be at
+#FROM registry.ci.openshift.org/ci/bmqe-dhcpd:latest
+FROM quay.io/openshifttest/base-alpine:1.2.0
 
 RUN apk add --no-cache dnsmasq
 
-COPY /usr/share/bastion_services/dhcp/dnsmasq.conf /etc/dnsmasq.conf
-COPY /usr/share/bastion_services/dhcp/tftpboot /var/lib/tftpboot
 CMD ["dnsmasq", "--keep-in-foreground", "--no-daemon"]
