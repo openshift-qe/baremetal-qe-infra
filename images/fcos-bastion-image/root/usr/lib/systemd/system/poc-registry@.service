@@ -1,0 +1,30 @@
+[Unit]
+Description=Create a podman registry container
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+ConditionPathExists=/opt/registry-common
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=/usr/share/bastion_services/registry/%i.conf
+Restart=on-failure
+Type=simple
+TimeoutStartSec=70
+ExecStartPre=/usr/bin/podman rm -f poc-registry-${PORT}
+ExecStartPre=/bin/sh -c '/usr/bin/gen_registry_file.sh ${PORT}'
+ExecStart=/usr/bin/podman run --rm --name poc-registry-${PORT} \
+                              -p ${PORT}:${PORT} \
+                              -v /opt/registry-${PORT}/data:/var/lib/registry:z \
+                              -v /opt/registry-${PORT}/auth:/auth:Z \
+                              -v /opt/registry-${PORT}/certs:/certs:z \
+                              -v /opt/registry-${PORT}/config.yaml:/etc/docker/registry/config.yml:Z \
+                              docker.io/library/registry:2
+
+ExecStop=/usr/bin/podman stop --ignore poc-registry-${PORT}
+ExecStopPost=/usr/bin/podman rm -f --ignore poc-registry-${PORT}
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
