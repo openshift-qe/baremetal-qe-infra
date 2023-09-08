@@ -4,7 +4,7 @@ passwd:
   users:
     - name: core
       ssh_authorized_keys_local:
-        - /ignitions/authorized_keys
+        - authorized_keys
 systemd:
   units:
     - name: wipe-disks.service

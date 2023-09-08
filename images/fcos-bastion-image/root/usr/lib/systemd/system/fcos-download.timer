@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer to download latest fcos on boot and weekly
+
+[Timer]
+OnBootSec=5min
+OnCalendar=Mon,Thu *-*-* 03:00:00
+
+[Install]
+WantedBy=timers.target

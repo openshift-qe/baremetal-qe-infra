@@ -4,5 +4,5 @@ passwd:
   users:
     - name: core
       ssh_authorized_keys_local:
-        - /ignitions/authorized_keys 
+        - authorized_keys
       password_hash: $password_hash
