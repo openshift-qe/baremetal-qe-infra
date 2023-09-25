@@ -1,0 +1,11 @@
+FROM quay.io/centos/centos:stream8
+
+RUN dnf -y update && \
+    dnf -y install tang clevis jose http-parser && \
+    dnf clean all
+
+EXPOSE 7500/tcp
+
+COPY root/ / 
+
+CMD ["/usr/libexec/tangd", "-p", "7500", ,"-l", "/var/db/tang"]
