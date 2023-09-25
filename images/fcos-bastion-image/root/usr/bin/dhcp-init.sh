@@ -3,9 +3,13 @@
 set -x
 
 mkdir -p /var/opt/{ignitions,html}
-touch ${LOCAL_PATH}/dhcp/ignitions/{authorized_keys,password_hashes}
-
 ign=/var/opt/ignitions
+
+if [ ! -f ${ign}/authorized_keys ] || [ ! -f ${ign}/password_hashes ]; then
+  echo "Some files are not yet available, exiting prematurely from initializing dhcp services"
+  exit 1
+fi
+
 mkdir -p ${PODMAN_DNSMASQ_BASEDIR}/{etc,tftpboot,misc}
 cp ${LOCAL_PATH}/dhcp/dnsmasq.conf ${PODMAN_DNSMASQ_BASEDIR}/etc/
 cp ${LOCAL_PATH}/dhcp/tftpboot/grub.cfg ${TFTP_DIR}
