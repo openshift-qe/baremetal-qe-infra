@@ -1,0 +1,23 @@
+[Unit]
+Description=Creates a nginx container service
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=/usr/share/bastion_services/nginx/nginx_systemd.conf
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/%n.ctr-id
+ExecStart=/usr/bin/podman run -d --name nginx-container -p 80:80/tcp -p 443:443/tcp \
+    -v ${PODMAN_NGINX_BASEDIR}:/usr/share/nginx/html \
+    ${PODMAN_NGINX_IMAGE}
+ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+Type=one-shot
+RemainAfterExit=yes
+KillMode=none
+
+[Install]
+WantedBy=default.target
