@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check the 'default' pool existing, define the pool if it doesn't exist
-default_image_pool=`virsh pool-list --all | grep default`
+default_image_pool=$(virsh pool-list --all | grep default)
 
 if [[ -z ${default_image_pool} ]]; then
 cat > "/etc/libvirt/storage/default.xml" << EOF
@@ -18,7 +18,7 @@ EOF
     virsh pool-define default.xml
 fi
 # Check the 'default' pool started, start the pool if it is inactive
-default_image_pool_start=`virsh pool-list | grep default`
+default_image_pool_start=$(virsh pool-list | grep default)
 
 if [[ -z ${default_image_pool_start} ]]; then
     virsh pool-start default
