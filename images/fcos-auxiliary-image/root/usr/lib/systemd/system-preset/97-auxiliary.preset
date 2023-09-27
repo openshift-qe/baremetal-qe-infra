@@ -1,0 +1,2 @@
+enable libvirtd.service
+enable libvirtd-initial.service
