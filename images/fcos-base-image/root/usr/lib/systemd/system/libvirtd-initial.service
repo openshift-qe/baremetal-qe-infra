@@ -6,7 +6,7 @@ Wants=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 TimeoutStopSec=70
-ExecStart=/bin/sh '/usr/bin/libvirt_initial.sh'
+ExecStart=/bin/sh '/usr/bin/libvirt_init.sh'
 Type=one-shot
 RemainAfterExit=no
 KillMode=none
