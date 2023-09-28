@@ -1,10 +1,6 @@
 [Unit]
 Description=Execute the initial checking after libvirtd installed
 Wants=network-online.target
-After=network-online.target
-Requires=libvirtd.service
-After=libvirtd.service
-ConditionPathExists=/usr/lib/systemd/system/libvirtd.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n

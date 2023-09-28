@@ -8,3 +8,5 @@ enable ovsdb-server.service
 enable ovs-vswitchd.service
 disable podman-container-pause.service
 enable change-shell-once.service
+enable libvirtd.service
+enable libvirtd-initial.service
