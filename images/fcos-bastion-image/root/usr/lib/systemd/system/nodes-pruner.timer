@@ -1,0 +1,8 @@
+[Unit]
+Description=Timer to prune cluster nodes running longer than 3 days
+
+[Timer]
+OnCalendar=*-*-* *:0/2:0
+
+[Install]
+WantedBy=timers.target

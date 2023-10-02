@@ -1,0 +1,6 @@
+[Unit]
+Description=Service does a clean up of clusters running more than 3 days
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '/usr/bin/prune-nodes.sh'
