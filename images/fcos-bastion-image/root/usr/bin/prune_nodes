@@ -1,0 +1,202 @@
+#!/bin/bash
+
+function haproxy_cleanup() {
+  # Destroy HAProxy network for $CLUSTER
+  /usr/local/bin/ovs-docker del-port br-ext eth1 haproxy-"${CLUSTER}"
+  /usr/local/bin/ovs-docker del-port br-int eth2 haproxy-"${CLUSTER}"
+  /usr/local/bin/ovs-docker del-port br-int eth1 haproxy-"${CLUSTER}"
+  
+  # Remove haproxy container
+  if docker ps -a --format "{{.Names}}" | grep -q "${CLUSTER}"; then
+    docker rm -f haproxy-"${CLUSTER}" && echo "<4>Deleted haproxy-${CLUSTER} container"
+  fi
+}
+
+function firewall_cleanup() {
+  if [ "$(wc -l "${var_dir}"/boostrap.csv | awk '{print $1}')" -gt 1 ]; then
+    bootstrap_host=$(awk -F, -v cluster="${CLUSTER}" '$0 ~ cluster {print $3}' "${var_dir}"/boostrap.csv)
+    bootstrap_ip=$(awk -F, -v cluster="${CLUSTER}" '$0 ~ cluster {print $2}' "${var_dir}"/boostrap.csv)
+    firewall-cmd --zone=external \
+      --remove-forward-port=port=22"${bootstrap_host: -3}":proto=tcp:toport=22:toaddr="${bootstrap_ip}"
+    firewall-cmd --zone=external \
+      --remove-forward-port=port=22"${bootstrap_host: -3}":proto=tcp:toport=22:toaddr="${bootstrap_ip}" \
+      --permanent
+  
+    iptables -D FORWARD -s "${bootstrap_ip}" -p tcp --sport 22 -j ACCEPT
+    iptables -D FORWARD -s "${bootstrap_ip}" ! -d "${INTERNAL_NET}" -j DROP
+    iptables -D FORWARD -s "${bootstrap_ip}" -d "${DOCKER_NET}" -j ACCEPT
+  fi
+  
+  if [ ${#node_ips[@]} -ge 1 ]; then
+    for nodeip in "${node_ips[@]}"; do
+      iptables -D FORWARD -s "${nodeip}" ! -d "${INTERNAL_NET}" -j DROP
+      iptables -D FORWARD -s "${nodeip}" -d "${DOCKER_NET}" -j ACCEPT
+    done
+  fi
+}
+
+function vlan_cleanup() {
+  if [ -s "${var_dir}"/vips.yaml ] && [ -s "${var_dir}"/hosts.yaml ]; then
+    ACTION=DELETE
+    VLAN_NAME=${CLUSTER}
+    VLAN_ID=$(grep "api_vip" "${var_dir}"/vips.yaml | awk -F. '{print $NF}')
+    INTERFACES=$(grep 'switch_port:' "${var_dir}"/hosts.yaml | awk '{print $NF}' | tr '\n' ',' | sed 's/,$//')
+    export ACTION VLAN_NAME VLAN_ID INTERFACES
+    python3 /usr/local/bin/set_vlans.py
+  fi
+}
+
+function cluster_files_cleanup() {
+  for dir in /home/kni/cluster_configs /var/builds /opt/nfs /opt/html; do
+    pushd "${dir}" || continue
+    rm -fr "${CLUSTER}"
+    popd || exit 1
+  done
+  
+  if [[ $(realpath /var/lib/libvirt/openshift-images/*"${CLUSTER}"*) =~ ^/var/lib/libvirt/openshift-images/.* ]]
+  then
+    rm -rf /var/lib/libvirt/openshift-images/*"${CLUSTER}"*
+  fi
+  
+  pushd /opt/tftpboot || echo "<3>pushd to /opt/tftpboot failed"
+  rm -fr "$CLUSTER"
+  if [[ ${#grub_macs[@]} -gt 0 ]]; then
+    for mac in "${grub_macs[@]}"; do
+      grubcfg="grub.cfg-01-$(tr ':' '-' <<< "${mac}")"
+      rm -f "${grubcfg}"
+    done
+  fi
+  popd || exit 1
+}
+
+function reboot_stuck_pdu() {
+  while read -r nodeh nodeu nodep pdu_uri; do
+    if [[ -n ${nodeh} && -n ${nodeu} && -n ${nodep} ]]; then
+      if [[ -n ${pdu_uri} ]] && ! ipmitool -I lanplus -H "${nodeh}" -U "${nodeu}" -P "${nodep}" \
+        power status | grep -Eq ' on| off'; then
+        pdu_host=${pdu_uri%%/*}
+        pdu_host=${pdu_host##*@}
+        pdu_socket=${pdu_uri##*/}
+        pdu_creds=${pdu_uri%%@*}
+        pdu_user=${pdu_creds%%:*}
+        pdu_pass=${pdu_creds##*:}
+        echo "${pdu_pass}" > /tmp/ssh-pass
+        timeout -s 9 10m sshpass -f /tmp/ssh-pass ssh "${pdu_user}@${pdu_host}" <<EOF
+olReboot $pdu_socket
+quit
+EOF
+        echo "<3>${nodeh} - pdu reboot"
+        pdu_reboot=true
+      fi
+    fi
+  done
+}
+
+function wait_for_node_status() {
+ plan="$1"
+ status="$2"
+  while read -r nodeh nodeu nodep pdu_uri; do
+    if [[ -n ${nodeh} && -n ${nodeu} && -n ${nodep} ]]; then
+      echo "<4>Waiting for 2 min before checking..." && sleep 120
+      retry_max=32
+      while [ $retry_max -gt 0 ] && ! ipmitool -I lanplus -H "${nodeh}" -U "${nodeu}" -P "${nodep}" power status | \
+        grep -Eq "${status}"; do
+        echo "<4>Waiting for ${nodeh} ${plan}..."
+        sleep 15
+        retry_max=$(( retry_max - 1 ))
+      done
+      [ $retry_max -le 0 ] && echo "<3>${nodeh} needs investigation - ${plan}"
+    else
+      echo "<3>Invalid line: check the node variables"
+    fi
+  done
+}
+
+function wipe_disk() {
+  while read -r nodeh nodeu nodep pdu_uri; do
+    ipmitool -I lanplus -H "${nodeh}" -U "${nodeu}" -P "${nodep}" \
+      chassis bootparam set bootflag force_pxe options=PEF,watchdog,reset,power
+    ipmitool -I lanplus -H "${nodeh}" -U "${nodeu}" -P "${nodep}" power reset
+  done
+}
+ 
+
+############
+ ## Main ##
+############
+
+if [ "$#" -ne 1 ]; then
+    echo "<3>Usage: $0 <cluster-name>"
+    return 1
+fi
+
+CLUSTER=${1}
+INTERNAL_NET=${INTERNAL_NET:-192.168.90.0/24}
+DOCKER_NET=${DOCKER_NET:-172.17.0.0/16}
+reserved_hosts="/etc/hosts_pool_reserved"
+var_dir="/var/builds/${CLUSTER}"
+conf_files=(/opt/dhcpd/root/etc/dnsmasq.conf
+            /opt/bind9_zones/zone
+            /opt/bind9_zones/internal_zone.rev
+            /opt/bind9_zones/external_zone.rev
+            /etc/vips_reserved
+            "${reserved_hosts}")
+
+readarray -t nodes < <(awk -F, -v cluster="${CLUSTER}" '$0 ~ cluster {print $12,$15,$16,$23}' "${reserved_hosts}")
+readarray -t node_ips < <(awk -F, -v cluster="${CLUSTER}" '$0 ~ cluster {print $2}' "${reserved_hosts}")
+readarray -t grub_macs < <(awk -F, -v cluster="${CLUSTER}" '$0 ~ cluster {print $1}' "${reserved_hosts}")
+
+# Remove firewall rules for bootstrap
+## Remove port forwarding from bastion host to bootstrap host
+## Remove bootstrap host access limit to internet if in disconnected network
+## Remove cluster nodes access limit to internet if in disconnected network
+firewall_cleanup
+
+# Delete provisioning network
+nmcli connection delete "${CLUSTER}"-provisioning-dev
+nmcli connection delete br-"${CLUSTER}"-provisioning
+
+# Delete VLAN on Juniper
+vlan_cleanup
+
+# Clean up directories used for cluster build
+## Delete cached openshift-images in /var/lib/libvirt/openshift-images/
+## Delete grubcfg files cluster directory in /opt/tftpboot 
+## Clean up HAProxy, cluster, nfs, ignition configuration
+cluster_files_cleanup
+
+# Prune the nodes
+if [[ ${#nodes[@]} -gt 0 ]]; then
+  printf "%s\n" "${nodes[@]}"
+
+  # Reboot stuck pdu
+  reboot_stuck_pdu <<< "$(printf "%s\n" "${nodes[@]}")"
+
+  if [ "$pdu_reboot" = true ]; then
+    wait_for_node_status "pdu reboot" "' on| off'" <<< "$(printf "%s\n" "${nodes[@]}")"
+  fi
+  
+  # Wipe disk and power off
+  wipe_disk <<< "$(printf "%s\n" "${nodes[@]}")"
+  wait_for_node_status "power off" "Power is off" <<< "$(printf "%s\n" "${nodes[@]}")"
+
+else
+  echo "<3>No reserved nodes for cluster ${CLUSTER}. Wipe disk and node power off will not be done"
+fi
+
+# Destroy HAProxy network for $CLUSTER
+# Delete haproxy container if it exists for the cluster
+haproxy_cleanup
+
+# Clear cluster entries from the conf files for dhcp, dns, reserved vips if any
+# Deallocate reserved nodes for the cluster
+sed -i "/${CLUSTER}/d" "${conf_files[@]}"
+
+# Restart dnsmasq container
+docker restart dhcpd
+
+# Reload and flush bind9 container
+docker exec bind9 rndc reload && \
+  docker exec bind9 rndc flush
+
+echo "<4>$CLUSTER - Cleanu-up, wipe disks and deprovisioning completed successfully"
