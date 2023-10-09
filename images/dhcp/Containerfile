@@ -1,6 +1,3 @@
-# Image is built with this Containerfile at quay.io/sgoveas/dnsmasq:1.0
-# Later prow will build the image and would be at
-# registry.ci.openshift.org/ci/bmqe-dhcpd:latest
 FROM quay.io/openshifttest/base-alpine:1.2.0
 
 RUN apk add --no-cache dnsmasq
