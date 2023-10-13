@@ -7,10 +7,9 @@ do
   create_ts=$(date -d "${creation_ts}" +%s)
   now_ts=$(date +%s)
   diff_in_ts=$((now_ts - create_ts))
-  time_in_days=$((diff_in_ts / 86400))
-  if [ "${time_in_days}" -ge 3 ]; then
+  if [ "${diff_in_ts}" -ge 259200 ]; then
     CLUSTER=${i#haproxy-}
-    echo "<3>$CLUSTER is more than 3 days old, prunning started...."
+    echo "<3>$CLUSTER is more than 3 days old, starting the pruning...."
     prune_nodes "$CLUSTER"
   fi
 done
