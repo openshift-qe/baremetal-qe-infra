@@ -65,12 +65,25 @@ function cluster_files_cleanup() {
   rm -rf /var/lib/libvirt/openshift-images/*"${1}"*
 }
 
+function wait_for_node_status() {
+  retry_max=32
+  while [ $retry_max -gt 0 ] && ! ipmitool -I lanplus -H "${bmc_address}" -U "${bmc_user}" -P "${bmc_pass}" \
+   power status | grep -Eq "${status}"; do
+    echo "<4>Waiting for ${name}: ${bmc_address} ${plan}..."
+    sleep 15
+    retry_max=$(( retry_max - 1 ))
+  done
+  [ $retry_max -le 0 ] && echo "<3>${bmc_address} needs investigation ${plan}"
+}
+
 function reboot_stuck_pdu() {
   local bmc_address="${1}"
   local bmc_user="${2}"
   local bmc_pass="${3}"
   local name="${4}"
   local pdu_uri="${5}"
+  local plan="${6}"
+  local status="${7}"
   if [ -n "${pdu_uri}" ] && ! ipmitool -I lanplus -H "${bmc_address}" -U "${bmc_user}" -P "${bmc_pass}" \
    power status | grep -Eq ' on| off'; then
     pdu_host=${pdu_uri%%/*}
@@ -90,24 +103,12 @@ EOF
   else
     echo "<4>${name}: ${bmc_address} - node responded or no pdu for this node"
   fi
-}
 
-function wait_for_node_status() {
-  local bmc_address="${1}"
-  local bmc_user="${2}"
-  local bmc_pass="${3}"
-  local name="${4}"
-  local pdu_uri="${5}"
-  local plan="${6}"
-  local status="${7}"
-  retry_max=32
-  while [ $retry_max -gt 0 ] && ! ipmitool -I lanplus -H "${bmc_address}" -U "${bmc_user}" -P "${bmc_pass}" \
-   power status | grep -Eq "${status}"; do
-    echo "<4>Waiting for ${name}: ${bmc_address} ${plan}..."
-    sleep 15
-    retry_max=$(( retry_max - 1 ))
-  done
-  [ $retry_max -le 0 ] && echo "<3>${bmc_address} needs investigation ${plan}"
+  # Wait if a node pdu was rebooted
+  if [ "${pdu_reboot}" = "true" ]; then
+    echo "<4>Waiting for 2 min before checking node response..." && sleep 120
+    wait_for_node_status
+  fi
 }
 
 function wipe_disk() {
@@ -116,10 +117,16 @@ function wipe_disk() {
   local bmc_pass="${3}"
   local name="${4}"
   local pdu_uri="${5}"
+  local plan="${6}"
+  local status="${7}"
   echo "<4>Wiping disk of ${name}: ${bmc_address}..."
   ipmitool -I lanplus -H "${bmc_address}" -U "${bmc_user}" -P "${bmc_pass}" \
    chassis bootparam set bootflag force_pxe options=PEF,watchdog,reset,power
   ipmitool -I lanplus -H "${bmc_address}" -U "${bmc_user}" -P "${bmc_pass}" power reset
+
+  # Wait to confirm nodes have powered off
+  echo "<4>Waiting for 2 min before checking node power off status..." && sleep 120
+  wait_for_node_status
 }
 
 function exec_on_nodes() {
@@ -135,9 +142,10 @@ function exec_on_nodes() {
     fi
 
     # Execute the action
-    "${action}" "${bmc_address}" "${bmc_user}" "${bmc_pass}" "${name}" "${pdu_uri:-}" "${params[@]}"
+    "${action}" "${bmc_address}" "${bmc_user}" "${bmc_pass}" "${name}" "${pdu_uri:-}" "${params[@]}" &
 
   done
+  wait
 }
 
 ############
@@ -146,7 +154,7 @@ function exec_on_nodes() {
 
 if [ "$#" -ne 1 ]; then
     echo "<3>Usage: $0 <cluster-name>"
-    return 1
+    exit 1
 fi
 
 CLUSTER=${1}
@@ -171,20 +179,11 @@ if [ -s "${SHARED_DIR}"/hosts.yaml ]; then
   vlan_cleanup "${CLUSTER}"
 
   # Reboot any stuck node pdu
-  exec_on_nodes reboot_stuck_pdu &
-
-  # Wait if a node pdu was rebooted
-  if [ "${pdu_reboot}" = "true" ]; then
-    echo "<4>Waiting for 2 min before checking node response..." && sleep 120
-    exec_on_nodes wait_for_node_status 'for pdu reboot' "' on| off'"
-  fi
+  exec_on_nodes reboot_stuck_pdu 'for pdu reboot' "' on| off'"
 
   # Wipe disk and power off
-  exec_on_nodes wipe_disk &
+  exec_on_nodes wipe_disk 'to power off' 'Power is off'
 
-  # Wait to confirm nodes have powered off
-  echo "<4>Waiting for 2 min before checking node power off status..." && sleep 120
-  exec_on_nodes wait_for_node_status 'to power off' 'Power is off'
 else
   echo "<4>${SHARED_DIR}/hosts.yaml file does not exist. Skipping firewall, nodes and vlan cleanup"
 fi
@@ -214,4 +213,4 @@ docker restart dhcpd
 docker exec bind9 rndc reload && \
   docker exec bind9 rndc flush
 
-echo "<4>$CLUSTER - Cleanu-up, wipe disks and deprovisioning completed successfully"
+echo "<4>$CLUSTER - Clean-up, wipe disks and deprovisioning completed successfully"
