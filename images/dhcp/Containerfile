@@ -1,5 +1,6 @@
-FROM quay.io/openshifttest/base-alpine:1.2.0
+FROM quay.io/centos/centos:stream9
 
-RUN apk add --no-cache dnsmasq
+RUN dnf -y install dnsmasq && \
+    dnf clean all
 
 CMD ["dnsmasq", "--keep-in-foreground", "--no-daemon"]
