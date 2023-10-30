@@ -3,4 +3,6 @@ FROM quay.io/centos/centos:stream9
 RUN dnf -y install dnsmasq && \
     dnf clean all
 
+COPY root/ /
+
 CMD ["dnsmasq", "--keep-in-foreground", "--no-daemon"]

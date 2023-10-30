@@ -6,6 +6,6 @@ RUN dnf -y update && \
 
 EXPOSE 7500/tcp
 
-COPY root/ / 
+COPY root/ /
 
 CMD ["/usr/libexec/tangd", "-p", "7500", ,"-l", "/var/db/tang"]
