@@ -58,7 +58,7 @@ function cluster_files_cleanup() {
 
   for dir in /home/kni/cluster_configs /var/builds /opt/nfs /opt/html; do
     pushd "${dir}" || continue
-    rm -fr "${1}"
+    [ -n "${1}" ] && rm -fr "${1}"*
     popd || exit 1
   done
 

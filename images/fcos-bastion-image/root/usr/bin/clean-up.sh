@@ -13,3 +13,11 @@ do
     prune_nodes "$CLUSTER"
   fi
 done
+
+# Clean up left over ports in the ovs switches that can span across multiple clusters
+for port in $(ovs-vsctl show  | grep "No such device" | sed -e 's/^.*device //' -e 's/ (No such.*$//')
+do
+  bridge=$(ovs-vsctl port-to-br "$port")
+  echo "Deleting orphan port $bridge/$port"
+  ovs-vsctl del-port "$bridge" "$port"
+done
