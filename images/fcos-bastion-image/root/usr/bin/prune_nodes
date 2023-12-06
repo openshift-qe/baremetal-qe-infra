@@ -46,23 +46,24 @@ function vlan_cleanup() {
   fi
 }
 
-function cluster_files_cleanup() {
+function remove_grub_files() {
   local SHARED_DIR="/var/builds/${1}"
   pushd /opt/tftpboot || echo "<3>pushd to /opt/tftpboot failed"
-  rm -fr "${1}"
   for mac in $(yq eval '.[] | .mac' "${SHARED_DIR}/hosts.yaml"); do
     grubcfg="grub.cfg-01-$(tr ':' '-' <<< "${mac}")"
     rm -f "${grubcfg}"
   done
   popd || exit 1
+}
 
-  for dir in /home/kni/cluster_configs /var/builds /opt/nfs /opt/html; do
+function cluster_files_cleanup() {
+  for dir in /home/kni/cluster_configs /var/builds /opt/nfs /opt/html /opt/tftpboot; do
     pushd "${dir}" || continue
     [ -n "${1}" ] && rm -fr "${1}"*
     popd || exit 1
   done
 
-  rm -rf /var/lib/libvirt/openshift-images/*"${1}"*
+  [ -n "${1}" ] && rm -rf /var/lib/libvirt/openshift-images/*"${1}"*
 }
 
 function wait_for_node_status() {
@@ -178,6 +179,9 @@ if [ -s "${SHARED_DIR}"/hosts.yaml ]; then
   # Delete VLAN on Juniper
   vlan_cleanup "${CLUSTER}"
 
+  # Delete cluster grubcfg files
+  remove_grub_files "${CLUSTER}"
+
   # Reboot any stuck node pdu
   exec_on_nodes reboot_stuck_pdu 'for pdu reboot' "' on| off'"
 
@@ -202,7 +206,6 @@ sed -i "/${CLUSTER}/d" "${conf_files[@]}"
 
 # Clean up directories used for cluster build
 ## Clean up HAProxy, cluster, nfs, ignition configuration
-## Delete grubcfg files cluster directory in /opt/tftpboot
 ## Delete cached openshift-images in /var/lib/libvirt/openshift-images/
 cluster_files_cleanup "${CLUSTER}"
 
