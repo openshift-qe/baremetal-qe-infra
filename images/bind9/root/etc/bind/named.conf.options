@@ -17,6 +17,10 @@ options {
 	secroots-file	"/var/named/data/named.secroots";
 	recursing-file	"/var/named/data/named.recursing";
 	allow-query     { any; };
+	allow-recursion { any; };
+	allow-query-cache { any; };
+    forward first;
+    auth-nxdomain no;    # conform to RFC1035
 	include "/etc/bind/named.conf.deployment_options";
 
 	/*
