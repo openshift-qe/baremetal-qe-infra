@@ -10,3 +10,4 @@ disable podman-container-pause.service
 enable change-shell-once.service
 enable libvirtd.service
 enable libvirtd-initial.service
+enable fix-resolvconf.service
