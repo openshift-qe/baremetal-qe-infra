@@ -1,13 +1,15 @@
 [Unit]
 Description=Execute the initial checking after libvirtd installed
 Wants=network-online.target
+ConditionPathExists=!/var/.libvirt_init_done
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 TimeoutStopSec=70
-ExecStart=/bin/sh '/usr/bin/libvirt_init.sh'
-Type=one-shot
+ExecStartPre=/bin/sh /usr/bin/libvirt_init.sh
+ExecStart=/bin/touch /var/.libvirt_init_done
+Type=oneshot
 RemainAfterExit=no
 KillMode=none
 
