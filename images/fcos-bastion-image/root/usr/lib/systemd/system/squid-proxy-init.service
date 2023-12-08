@@ -16,7 +16,7 @@ ExecStartPre=-/bin/sh -c 'cp /usr/share/bastion_services/squid/*.conf ${PODMAN_S
 ExecStartPre=-/bin/sh -c '/usr/bin/podman run --rm --interactive --user ${PODMAN_SQUID_UID} -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" ${PODMAN_SQUID_IMAGE} bash -c "/usr/lib64/squid/security_file_certgen -c -s /var/lib/ssl_db -M 4"'
 ExecStartPre=-/bin/sh -c '/usr/bin/chown -R ${PODMAN_SQUID_UID}:${PODMAN_SQUID_UID} ${PODMAN_SQUID_BASEDIR}'
 ExecStart=/bin/touch /var/.squid-configured
-Type=one-shot
+Type=oneshot
 RemainAfterExit=no
 
 [Install]

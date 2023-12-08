@@ -15,7 +15,7 @@ ExecStartPre=/bin/bash -c '[ -f /opt/bind9/rndc.key ] || /usr/bin/podman run --r
 ExecStart=/usr/bin/podman run --rm -d -p 53:53/udp -p 53:53/tcp --name bind9 -v /opt/bind9_zones:/var/lib/bind:Z -v /opt/bind9/named.conf.local:/etc/bind/named.conf.local:Z -v /opt/bind9/rndc.key:/etc/rndc.key:Z -v /opt/bind9/named.conf.deployment_options:/etc/bind/named.conf.deployment_options:Z registry.ci.openshift.org/ci/bmqe-bind9:latest
 ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
 ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
-Type=one-shot
+Type=oneshot
 RemainAfterExit=yes
 KillMode=none
 

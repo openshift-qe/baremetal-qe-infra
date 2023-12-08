@@ -13,7 +13,7 @@ ExecStartPre=/bin/rm -f %t/%n.ctr-id
 ExecStart=/usr/bin/podman run --rm -d -p 7500:7500 --name tang -v /var/opt/tang/:/var/db/tang:Z registry.ci.openshift.org/ci/bmqe-tang:latest
 ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
 ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
-Type=one-shot
+Type=oneshot
 RemainAfterExit=yes
 KillMode=none
 

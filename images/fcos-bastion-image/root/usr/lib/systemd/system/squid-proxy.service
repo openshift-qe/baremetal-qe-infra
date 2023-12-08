@@ -21,7 +21,7 @@ ExecStart=/usr/bin/podman run --rm -d --name squid-proxy --hostname squid-proxy 
     ${PODMAN_SQUID_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
 ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
-Type=one-shot
+Type=oneshot
 RemainAfterExit=yes
 KillMode=none
 

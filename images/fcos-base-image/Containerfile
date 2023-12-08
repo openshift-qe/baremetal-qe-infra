@@ -2,10 +2,6 @@ FROM quay.io/fedora/fedora-coreos:stable
 
 ENTRYPOINT ["/bin/bash"]
 
-# Isolating the packages installation by similarity and estimated frequency of upgrades required per chunk.
-# Although this could be considered an anti-pattern in the container images standard use cases,
-# we'd prefer small layers over large to decrease the probability of updating a single big layer each time we update.
-
 RUN set -x; arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'); cat /etc/os-release \
     && rpm-ostree install \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
@@ -16,51 +12,14 @@ RUN set -x; arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'); cat /etc/
 # Also, installing nfs-utils will leave content in /var. `rm -rf /var/*` is a workaround until the packages are fixed.
 RUN rpm-ostree uninstall nfs-utils-coreos && rpm-ostree install nfs-utils && rm -rf /var/* && ostree container commit
 
-RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iputils iproute mtr nethogs socat"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="chrony targetcli"; \
-    rpm-ostree install $PACKAGES_INSTALL && rm -rf /var/* && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="net-tools bind-utils iperf iperf3 iputils mtr ethtool tftp wget ipmitool"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="gawk htop ncdu procps strace iotop"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="subversion git git-lfs"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="gnupg2 openssl openvpn rsync tcpdump nmap nmap-ncat krb5-workstation"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="qemu-kvm qemu-user-static"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="libvirt virt-manager virt-install"; \
-    rpm-ostree install $PACKAGES_INSTALL && rm -rf /var/* && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="sudo screen unzip util-linux-user ignition"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="zsh nmap-ncat socat"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="python3-pip"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="skopeo jq"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="vim neovim"; \
-    rpm-ostree install $PACKAGES_INSTALL && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="inotify-tools firewall-config"; \
-    rpm-ostree install $PACKAGES_INSTALL && \
-    ln -s /usr/bin/ld.bfd /usr/bin/ld && ostree container commit
-
-RUN set -x; PACKAGES_INSTALL="openvswitch NetworkManager-ovs"; \
+RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iputils iproute mtr nethogs socat chrony \
+                              targetcli net-tools bind-utils iperf iperf3 iputils mtr ethtool tftp wget ipmitool gawk \
+                              htop ncdu procps strace iotop subversion git git-lfs gnupg2 openssl openvpn rsync tcpdump \
+                              nmap nmap-ncat krb5-workstation qemu-kvm qemu-user-static libvirt virt-manager virt-install \
+                              sudo screen unzip util-linux-user ignition  zsh nmap-ncat socat python3-pip \
+                              skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs"; \
     rpm-ostree install $PACKAGES_INSTALL \
+    && ln -s /usr/bin/ld.bfd /usr/bin/ld \
     && ln -s /usr/sbin/ovs-vswitchd.dpdk /usr/sbin/ovs-vswitchd \
     && rm -rf /var/* \
     && rpm-ostree cleanup -m \

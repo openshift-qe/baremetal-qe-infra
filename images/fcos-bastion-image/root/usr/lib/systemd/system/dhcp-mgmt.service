@@ -1,0 +1,31 @@
+[Unit]
+Description=Creates a dnsmasq container for dhcp and tftpboot service
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+ConditionPathExists=${PODMAN_DNSMASQ_BASEDIR}-bmc-oob/etc/dnsmasq.conf.hosts
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=/usr/share/bastion_services/dhcp/dhcp_systemd.conf
+Restart=on-failure
+TimeoutStartSec=300
+ExecStartPre=-/usr/bin/rm -f %t/%n.ctr-id
+# Enforce ignition-driven configuration
+ExecStartPre=/usr/bin/bash -c 'cp "${LOCAL_PATH}/dhcp-bmc-oob/dnsmasq.conf" "${PODMAN_DNSMASQ_BASEDIR}-bmc-oob/etc/"'
+ExecStartPre=/usr/bin/bash -c 'cat "${PODMAN_DNSMASQ_BASEDIR}-bmc-oob/dnsmasq.conf.hosts" >> "${PODMAN_DNSMASQ_BASEDIR}-bmc-oob/etc/dnsmasq.conf"'
+ExecStart=/usr/bin/podman run -d --name dhcp-mgmt \
+    --network host --cap-add NET_ADMIN --cap-add NET_RAW \
+    -v "${PODMAN_DNSMASQ_BASEDIR}-bmc-oob/etc:/etc/dnsmasq.d:Z" \
+    ${PODMAN_DNSMASQ_IMAGE}
+ExecStop=/usr/bin/podman stop --ignore dhcp-mgmt
+ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/bin/podman rm -f --ignore dhcp-mgmt
+ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+Type=oneshot
+RemainAfterExit=yes
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

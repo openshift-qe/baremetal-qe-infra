@@ -6,4 +6,5 @@ enable nginx.service
 enable bind9.service
 enable fcos-download.timer
 enable dhcp.service
+enable dhcp-mgmt.service
 enable tang.service
