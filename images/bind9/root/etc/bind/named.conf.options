@@ -21,7 +21,7 @@ options {
 	allow-query-cache { any; };
     forward first;
     auth-nxdomain no;    # conform to RFC1035
-	include "/etc/bind/named.conf.deployment_options";
+    include "/etc/bind/named.conf.deployment_options";
 
 	/*
 	 - If you are building an AUTHORITATIVE DNS server, do NOT enable recursion.
