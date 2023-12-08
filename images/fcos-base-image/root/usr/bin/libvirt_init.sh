@@ -1,27 +1,21 @@
 #!/bin/bash
 
-# Check the 'default' pool existing, define the pool if it doesn't exist
-default_image_pool=$(virsh pool-list --all | grep default)
+set -euxo pipefail
 
-if [[ -z ${default_image_pool} ]]; then
-cat > "/etc/libvirt/storage/default.xml" << EOF
+STORAGE_POOL_NAME="default"
+STORAGE_FOLDER="/var/lib/libvirt/images"
+
+if ! virsh pool-info "${STORAGE_POOL_NAME}"; then
+  virsh pool-define /dev/stdin <<EOF
 <pool type='dir'>
-  <name>default</name>
+  <name>${STORAGE_POOL_NAME}</name>
     <target>
-      <path>/var/lib/libvirt/images</path>
+      <path>${STORAGE_FOLDER}</path>
     </target>
 </pool>
 EOF
-    if [ ! -d "/var/lib/libvirt/images" ]; then
-        mkdir -p /var/lib/libvirt/images
-    fi
-    virsh pool-define default.xml
 fi
-# Check the 'default' pool started, start the pool if it is inactive
-default_image_pool_start=$(virsh pool-list | grep default)
 
-if [[ -z ${default_image_pool_start} ]]; then
-    virsh pool-start default
-fi
-# Auto-start the default pool
-virsh pool-autostart default
+mkdir -p "${STORAGE_FOLDER}"
+virsh pool-autostart "${STORAGE_POOL_NAME}"
+virsh pool-info "${STORAGE_POOL_NAME}" | grep -iqE "State:[ ]+running" || virsh pool-start "${STORAGE_POOL_NAME}"
