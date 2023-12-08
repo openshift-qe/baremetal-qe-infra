@@ -6,7 +6,7 @@ STORAGE_POOL_NAME="default"
 STORAGE_FOLDER="/var/lib/libvirt/images"
 
 if ! virsh pool-info "${STORAGE_POOL_NAME}"; then
-  virsh pool-define /dev/stdin <<EOF
+  cat /tmp/default.xml <<EOF
 <pool type='dir'>
   <name>${STORAGE_POOL_NAME}</name>
     <target>
@@ -14,6 +14,8 @@ if ! virsh pool-info "${STORAGE_POOL_NAME}"; then
     </target>
 </pool>
 EOF
+  virsh pool-define /tmp/default.xml
+  rm -f /tmp/default.xml
 fi
 
 mkdir -p "${STORAGE_FOLDER}"
