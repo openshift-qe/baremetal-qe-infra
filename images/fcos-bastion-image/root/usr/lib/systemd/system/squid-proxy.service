@@ -10,20 +10,20 @@ After=squid-proxy-init.service
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=/usr/share/bastion_services/squid/squid_systemd.conf
-Restart=on-failure
-TimeoutStopSec=70
-ExecStartPre=/bin/rm -f %t/%n.ctr-id
-ExecStart=/usr/bin/podman run --rm -d --name squid-proxy --hostname squid-proxy -p 3128-3130:3128-3130/tcp --user ${PODMAN_SQUID_UID} \
+ExecStartPre=/usr/bin/podman rm -f --ignore squid-proxy
+ExecStart=/usr/bin/podman run \
+    --name squid-proxy --hostname squid-proxy -p 3128-3130:3128-3130/tcp \
+    --user ${PODMAN_SQUID_UID} \
     -v "${PODMAN_SQUID_BASEDIR}/etc:/etc/squid:Z" \
     -v "${PODMAN_SQUID_BASEDIR}/cache:/var/spool/squid:Z" \
     -v "${PODMAN_SQUID_BASEDIR}/log:/var/log/squid:Z" \
     -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" \
     ${PODMAN_SQUID_IMAGE}
-ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
-ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
-Type=oneshot
-RemainAfterExit=yes
-KillMode=none
+ExecStop=/usr/bin/podman stop --ignore squid-proxy
+ExecStopPost=/usr/bin/podman rm -f --ignore squid-proxy
+Restart=on-failure
+RestartSec=5
+Type=simple
 
 [Install]
 WantedBy=default.target

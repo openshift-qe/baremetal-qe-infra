@@ -7,17 +7,18 @@ ConditionPathExists=!/var/.squid-configured
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
-EnvironmentFile=/usr/share/bastion_services/squid/squid_systemd.conf
-Restart=on-failure
-TimeoutStopSec=70
-ExecStartPre=/bin/rm -f %t/%n.ctr-id
-ExecStartPre=-/bin/sh -c '/usr/bin/mkdir -p ${PODMAN_SQUID_BASEDIR}/{cache,log,etc,lib}'
-ExecStartPre=-/bin/sh -c 'cp /usr/share/bastion_services/squid/*.conf ${PODMAN_SQUID_BASEDIR}/etc/'
-ExecStartPre=-/bin/sh -c '/usr/bin/podman run --rm --interactive --user ${PODMAN_SQUID_UID} -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" ${PODMAN_SQUID_IMAGE} bash -c "/usr/lib64/squid/security_file_certgen -c -s /var/lib/ssl_db -M 4"'
-ExecStartPre=-/bin/sh -c '/usr/bin/chown -R ${PODMAN_SQUID_UID}:${PODMAN_SQUID_UID} ${PODMAN_SQUID_BASEDIR}'
+EnvironmentFile=/etc/squid/squid_systemd.conf
+ExecStartPre=/usr/bin/mkdir -p ${PODMAN_SQUID_BASEDIR}/{cache,log,etc,lib}
+ExecStartPre=/usr/bin/podman run --rm --user ${PODMAN_SQUID_UID} \
+    -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" \
+    --entrypoint /usr/lib64/squid/security_file_certgen \
+    ${PODMAN_SQUID_IMAGE} -c -s /var/lib/ssl_db -M 4
+ExecStartPre=/usr/bin/chown -R ${PODMAN_SQUID_UID}:${PODMAN_SQUID_UID} ${PODMAN_SQUID_BASEDIR}
 ExecStart=/bin/touch /var/.squid-configured
-Type=oneshot
 RemainAfterExit=no
+Restart=on-failure
+RestartSec=10
+Type=oneshot
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

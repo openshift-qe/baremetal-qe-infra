@@ -9,13 +9,15 @@ AssertDirectoryNotEmpty=/var/opt/tang/
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 TimeoutStopSec=70
-ExecStartPre=/bin/rm -f %t/%n.ctr-id
-ExecStart=/usr/bin/podman run --rm -d -p 7500:7500 --name tang -v /var/opt/tang/:/var/db/tang:Z registry.ci.openshift.org/ci/bmqe-tang:latest
-ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
-ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
-Type=oneshot
-RemainAfterExit=yes
-KillMode=none
+ExecStartPre=/usr/bin/podman rm -f --ignore tang
+ExecStart=/usr/bin/podman run -p 7500:7500 --name tang \
+    -v /var/opt/tang/:/var/db/tang:Z \
+    registry.ci.openshift.org/ci/bmqe-tang:latest
+ExecStop=/usr/bin/podman stop --ignore tang
+ExecStopPost=/usr/bin/podman rm -f --ignore tang
+Restart=on-failure
+RestartSec=5
+Type=simple
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

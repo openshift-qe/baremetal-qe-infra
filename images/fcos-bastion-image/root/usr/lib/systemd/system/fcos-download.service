@@ -1,7 +1,14 @@
 [Unit]
 Description=Service downloads latest fcos
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 EnvironmentFile=/usr/share/bastion_services/dhcp/dhcp_systemd.conf
+ExecStart=/usr/bin/fcos-download.sh
+StandardOutput=journal
+StandardError=journal
 Type=oneshot
-ExecStart=/bin/bash -c '/usr/bin/fcos-download.sh'
+RestartSec=10
+Restart=on-failure
+
