@@ -2,7 +2,8 @@
 
 set -x
 
-mkdir -p "${PODMAN_DNSMASQ_BASEDIR}"/{etc,tftpboot,misc} /var/opt/{ignitions,html}
+mkdir -p "${PODMAN_DNSMASQ_BASEDIR}"/{etc,tftpboot,misc,hosts/hostsdir,hosts/optsdir} \
+ /var/opt/{ignitions,html}
 ign=/var/opt/ignitions
 cp "${LOCAL_PATH}"/dhcp/dnsmasq.conf "${PODMAN_DNSMASQ_BASEDIR}"/etc/
 if [ -f "${PODMAN_DNSMASQ_BASEDIR}"/dnsmasq.hosts.conf ]; then
