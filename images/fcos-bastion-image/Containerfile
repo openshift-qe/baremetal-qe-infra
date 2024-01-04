@@ -2,5 +2,5 @@ FROM quay.io/openshifttest/fcos-bm:base
 
 COPY root/ /
 
-RUN set -x; pip3 install --target=/usr/lib redfish pandas \
+RUN set -x; pip3 install --target=/usr/lib redfish pandas netaddr wheel junos-eznc \
     && systemctl preset-all
