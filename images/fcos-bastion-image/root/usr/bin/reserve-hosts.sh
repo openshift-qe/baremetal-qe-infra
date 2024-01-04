@@ -14,6 +14,12 @@ N_WORKERS=${N_WORKERS:-3}
 MAX_WAIT_MINS=${MAX_WAIT_MINS:-30}
 RESERVED_FILE=${RESERVED_FILE:-/etc/hosts_pool_reserved}
 INVENTORY_FILE=${INVENTORY_FILE:-/etc/hosts_pool_inventory}
+VENDOR_REGEX=""
+
+if [ -n "$VENDOR" ]; then
+  VENDOR_REGEX=",${VENDOR},"
+  echo $VENDOR_REGEX
+fi
 
 if [ -s /etc/hosts_pool_lock ]; then
     echo "The infra reservation is stopped:"
@@ -64,10 +70,10 @@ function check_available_hosts() {
   echo "Acquiring lock $LOCK_FD ($LOCK) (waiting up to 10 minutes)"
   flock -w 600 "$LOCK_FD"
   echo "Lock acquired $LOCK_FD ($LOCK)"
-  mapfile -t CANDIDATES_HOSTS < <(grep -v -f <(cut -f1,2,3 -d, "$RESERVED_FILE") <(sed -e '/^#/d' -e '/^mac.*$/d' "$INVENTORY_FILE") | grep ",${ARCH},")
+  mapfile -t CANDIDATES_HOSTS < <(grep -v -f <(cut -f1,2,3 -d, "$RESERVED_FILE") <(sed -e '/^#/d' -e '/^mac.*$/d' "$INVENTORY_FILE") | grep -E ",${ARCH},.*$VENDOR_REGEX")
   COUNT=${#CANDIDATES_HOSTS[@]}
   if [ "$COUNT" -lt "$NUM_HOSTS" ]; then
-    echo "Unable to reserve the required amount of hosts (retry n. $retry_count), releasing lock..."
+    echo "Unable to reserve the required amount of hosts witch ARCH: $ARCH and Vendor: ${VENDOR:-Any} (retry n. $retry_count), releasing lock..."
     flock -u "$LOCK_FD"
     return 1
   fi
