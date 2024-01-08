@@ -17,7 +17,7 @@ RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iput
                               htop ncdu procps strace iotop subversion git git-lfs gnupg2 lldpd openssl openvpn rsync tcpdump \
                               nmap nmap-ncat krb5-workstation qemu-kvm qemu-user-static libvirt virt-manager virt-install \
                               sudo screen telnet unzip util-linux-user ignition  zsh nmap-ncat socat python3-pip man \
-                              skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs tree"; \
+                              skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs tree sshpass"; \
     rpm-ostree install $PACKAGES_INSTALL \
     && ln -s /usr/bin/ld.bfd /usr/bin/ld \
     && ln -s /usr/sbin/ovs-vswitchd.dpdk /usr/sbin/ovs-vswitchd \
