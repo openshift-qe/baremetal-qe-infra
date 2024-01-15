@@ -11,7 +11,7 @@ The OMSDK version installed with pip prevents the ansible module to work with di
 git clone https://github.com/dell/omsdk.git
 cd omsdk
 pip3 install -r requirements-python3x.txt
-sh build.sh 1.2 503
+sh build.sh 1.2 503 (See package version on github)
 cd dist
 pip install omsdk-1.2.503-py2.py3-none-any.whl
 ```

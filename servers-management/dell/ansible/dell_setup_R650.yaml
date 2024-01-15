@@ -15,7 +15,7 @@
       idrac_user: "{{ idrac_user }}"
       idrac_password: "{{ idrac_password }}"
       validate_certs: False
-      reset_bios: yes
+      reset_bios: true
     with_items: "{{ groups['idrac'] }}"
     register: _create_instances
     async: 600  # Maximum runtime in seconds. Adjust as needed.
@@ -31,6 +31,8 @@
     delay: 120  # Check every 120 seconds. Adjust as you like.
     retries: 10  # Retry up to 10 times. Adjust as needed.
     with_items: "{{ _create_instances.results }}"
+    tags:
+      - parallel
 
   - name: Enable PXE 1 and 2, Disable PXE 3 and 4
     dellemc.openmanage.idrac_bios:
@@ -101,18 +103,16 @@
       - bios_config
 
   - name: Configure Boot Sources
-    dellemc.openmanage.idrac_bios:
-        idrac_ip: "{{ item }}"
-        idrac_user: "{{ idrac_user }}"
-        idrac_password: "{{ idrac_password }}"
-        validate_certs: False
-        boot_sources:
-          - Name: "NIC.PxeDevice.1-1"
-            Enabled: false
-            Index: 0
-          - Name: "NIC.PxeDevice.2-1"
-            Enabled: false
-            Index: 1
+    dellemc.openmanage.idrac_boot:
+      idrac_ip: "{{ item }}"
+      idrac_user: "{{ idrac_user }}"
+      idrac_password: "{{ idrac_password }}"
+      validate_certs: False
+      boot_options:
+        - boot_option_reference: "NIC.PxeDevice.1-1"
+          enabled: false
+        - boot_option_reference: "NIC.PxeDevice.2-1"
+          enabled: false
     with_items: "{{ groups['idrac'] }}"
     tags:
       - boot_sources
