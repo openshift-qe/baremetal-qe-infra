@@ -41,7 +41,7 @@ until ipmi_cmd power status | grep -i -q "Chassis Power is off"; do
   sleep 30
 done
 
-if [ "${ipxe_via_vmedia}" == "true" ]; then
+if [[ "${ipxe_via_vmedia}" == "true" ]] && [[ "${BOOT_MODE}" == "pxe" ]]; then
   log "The host requires an ipxe image to boot via vmedia in order to perform the pxe boot..."
   mount.vmedia.ipxe "${HOST}"
 fi
