@@ -32,7 +32,7 @@ options {
 	   cause your server to become part of large scale DNS amplification
 	   attacks. Implementing BCP38 within your network would greatly
 	   reduce such attack surface
-	*/
+	*/;
 	recursion yes;
 
 	managed-keys-directory "/var/named/dynamic";
