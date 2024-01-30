@@ -1,0 +1,25 @@
+
+{
+  "name": "podman",
+  "id": "41bf9b464d72c21becc8db522b6ca2a5b5d32e9a439b9d9c6c18887bd0d02c94",
+  "driver": "bridge",
+  "network_interface": "podman0",
+  "created": "2024-01-29T17:07:42.470547132Z",
+  "subnets": [
+       {
+            "subnet": "fd1e:7ae1:9e3a:8773::/64",
+            "gateway": "fd1e:7ae1:9e3a:8773::1"
+       },
+       {
+            "subnet": "10.88.0.0/16",
+            "gateway": "10.88.0.1"
+       }
+  ],
+  "ipv6_enabled": true,
+  "internal": false,
+  "dns_enabled": false,
+  "ipam_options": {
+       "driver": "host-local"
+  }
+}
+
