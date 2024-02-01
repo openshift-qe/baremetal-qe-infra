@@ -1,0 +1,8 @@
+[Unit]
+Description=Timer to cleanup mirrored registries caches on boot
+[Timer]
+OnBootSec=5min
+OnCalendar=Mon,Thu *-*-* 03:00:00
+
+[Install]
+WantedBy=timers.target
