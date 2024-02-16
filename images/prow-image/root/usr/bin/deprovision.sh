@@ -43,6 +43,8 @@ echo "Running the post-installation steps..."
 set +e
 set -x
 bash ./dhcp-pxe-conf/baremetal-lab-post-dhcp-pxe-conf-commands.sh
+PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=22 bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
+PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=2222 bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
 bash ./wipe/baremetal-lab-post-wipe-commands.sh
 bash ./dns/baremetal-lab-post-dns-commands.sh
 bash ./firewall/baremetal-lab-post-firewall-commands.sh
