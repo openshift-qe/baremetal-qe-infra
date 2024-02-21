@@ -11,3 +11,4 @@ enable enable-registries.service
 enable fill-network-env.service
 enable nodes-pruner.timer
 enable clean-registries.service
+enable ovs2br-conn-bringup.service
