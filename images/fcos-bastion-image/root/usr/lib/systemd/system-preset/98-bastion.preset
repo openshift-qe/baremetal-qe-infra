@@ -10,4 +10,4 @@ enable nfs-server.service
 enable enable-registries.service
 enable fill-network-env.service
 enable nodes-pruner.timer
-enable clean-registries.service
+enable clean-registries.timer
