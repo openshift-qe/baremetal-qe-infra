@@ -22,3 +22,4 @@ fi
 mkdir -p "${STORAGE_FOLDER}"
 virsh pool-autostart "${STORAGE_POOL_NAME}"
 virsh pool-info "${STORAGE_POOL_NAME}" | grep -iqE "State:[ ]+running" || virsh pool-start "${STORAGE_POOL_NAME}"
+virsh net-autostart --network default --disable
