@@ -10,29 +10,3 @@ host_id="${1}"
 host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.bmc_address == "*'"${host_id}"'*")')
 arch=$(echo "${host_obj}" | yq -r '.arch')
 mount.vmedia "${1}" "http://192.168.70.1/ipxe/ipxe.$arch.usb"
-
-vendor=$(echo "${host_obj}" | yq -r '.vendor')
-redfish_user=$(echo "${host_obj}" | yq -r '.redfish_user')
-redfish_password=$(echo "${host_obj}" | yq -r '.redfish_password')
-bmc_address=$(echo "${host_obj}" | yq -r '.bmc_address')
-case "${vendor}" in
-  dell)
-    curl -k -u "${redfish_user}:${redfish_password}" -X POST \
-      "https://$bmc_address/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration" \
-       -H "Content-Type: application/json" -d \
-       '{"ShareParameters":{"Target":"ALL"},"ImportBuffer":
-          "<SystemConfiguration><Component FQDD=\"iDRAC.Embedded.1\">
-          <Attribute Name=\"ServerBoot.1#BootOnce\">Enabled</Attribute>
-          <Attribute Name=\"ServerBoot.1#FirstBootDevice\">VCD-DVD</Attribute>
-          </Component></SystemConfiguration>"}'
-  ;;
-  hpe)
-    curl -k -u "${redfish_user}:${redfish_password}" -X PATCH \
-      "https://${bmc_address}/redfish/v1/Systems/1/" \
-      -H 'Content-Type: application/json' \
-      -d '{"Boot": {"BootSourceOverrideTarget": "Cd"}}'
-  ;;
-  *)
-    echo "Unsupported vendor ${vendor}"
-    exit 1
-esac

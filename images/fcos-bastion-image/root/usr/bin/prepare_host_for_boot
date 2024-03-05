@@ -70,7 +70,7 @@ case "${vendor}" in
     curl -k -u "${redfish_user}:${redfish_password}" -X PATCH \
       "https://$address/redfish/v1/Systems/1/" \
       -H 'Content-Type: application/json' \
-      -d '{"Boot": {"BootSourceOverrideTarget": "'"$boot_selection"'"}}'
+      -d '{"Boot": {"BootSourceOverrideTarget": "'"$boot_selection"'", "BootSourceOverrideEnabled": "Once"}}'
   ;;
   *)
     log "Unknown vendor ${vendor}"
