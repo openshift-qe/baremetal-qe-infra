@@ -1,13 +1,12 @@
 #!/bin/bash
 set -x
 
-NOW=$(date +'%s')
+iso_path="/home/kni/.cache/openshift-installer/image_cache/"
 
-for f in /home/kni/.cache/openshift-installer/image_cache/*; do
-  ACCESS=$(stat --format=%X "$f")
-  DELTA=$((NOW - ACCESS))
-  # 15 days
-  if [ $DELTA -gt 1296000 ]; then
-    rm -f "$f"
-  fi
-done
+if [ -d "${iso_path}" ]; then
+  echo "<3>${iso_path} exists, cleaning up 15 days old unused ISO"
+  find "${iso_path}" -type "f,d" -atime +15 -delete
+else
+  echo "<2>${iso_path} directory does not exist"
+fi
+

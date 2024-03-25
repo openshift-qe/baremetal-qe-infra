@@ -1,0 +1,13 @@
+[Unit]
+Description=Service does a clean up of cached iso not use for more than 15 days
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cache-clean-ipi.sh
+StandardOutput=journal
+StandardError=journal
+Type=oneshot
+RestartSec=10
+Restart=on-failure
+
+
