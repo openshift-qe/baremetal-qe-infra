@@ -19,6 +19,6 @@ done < <(find /var/builds/ -maxdepth 1 -type d -mtime +2 -print0)
 for port in $(ovs-vsctl show  | grep "No such device" | sed -e 's/^.*device //' -e 's/ (No such.*$//')
 do
   bridge=$(ovs-vsctl port-to-br "$port")
-  echo "Deleting orphan port $bridge/$port"
+  echo "<3>Deleting orphan port $bridge/$port"
   ovs-vsctl del-port "$bridge" "$port"
 done

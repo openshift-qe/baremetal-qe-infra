@@ -1,0 +1,8 @@
+[Unit]
+Description=Timer to clean cached iso unused and older than 15 days
+
+[Timer]
+OnCalendar=*-*-* *:30:00/3
+
+[Install]
+WantedBy=timers.target
