@@ -13,3 +13,4 @@ enable libvirtd-initial.service
 enable fix-resolvconf.service
 enable maintenance-window.timer
 enable lldpd.service
+enable cache-clean-ipi.timer

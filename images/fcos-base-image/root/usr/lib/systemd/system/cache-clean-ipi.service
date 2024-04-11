@@ -1,5 +1,5 @@
 [Unit]
-Description=Service does a clean up of cached iso not use for more than 15 days
+Description=Service does a clean up of cached iso not in use for more than 15 days
 
 [Service]
 Type=oneshot
