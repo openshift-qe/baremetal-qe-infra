@@ -1,5 +1,11 @@
 #!/bin/bash
 
+function cleanup() {
+    rm -f $p
+}
+
+trap cleanup INT TERM
+
 if [ "${#}" -lt 1 ]; then
     echo "Usage: ${0} <host_id> <command>"
     exit 1
@@ -8,7 +14,7 @@ fi
 host_id="${1}"
 shift
 
-host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.bmc_address == "*'".${host_id}"'*")')
+host_obj=$(sed 's/^#//' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.bmc_address == "*'".${host_id}"'*")')
 
 user=$(echo "${host_obj}" | yq -r '.bmc_user')
 password=$(echo "${host_obj}" | yq -r '.bmc_pass')
@@ -17,4 +23,3 @@ echo -n "${address}: "
 p=$(mktemp)
 echo "${password}" > $p
 sshpass -f $p ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=1000 "${user}"@"${address}" "${@}"
-rm -f $p
