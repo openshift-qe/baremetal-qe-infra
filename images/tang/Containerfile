@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream8
+FROM quay.io/centos/centos:stream9
 
 RUN dnf -y update && \
     dnf -y install tang clevis jose http-parser socat bind-utils iputils procps curl telnet net-tools wget && \
