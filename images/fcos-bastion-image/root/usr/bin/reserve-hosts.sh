@@ -18,6 +18,7 @@ VENDOR_REGEX=""
 
 if [ -n "$VENDOR" ]; then
   VENDOR_REGEX=",${VENDOR},"
+  # shellcheck disable=SC2086
   echo $VENDOR_REGEX
 fi
 
@@ -41,16 +42,16 @@ if [ -f "${BUILD_DIR}/hosts.yaml" ] && [ "$APPEND" != "true" ]; then
     exit 1
 fi
 
-if [ x"$REQUEST_BOOTSTRAP_HOST" == x"true" ]; then
+if [ "$REQUEST_BOOTSTRAP_HOST" == "true" ]; then
     NUM_HOSTS=$(( NUM_HOSTS + 1 ))
 fi
 
-if [ x"$APPEND" == x"true" ]; then
+if [ "$APPEND" == "true" ]; then
     POSTFIX="${POSTFIX:--a}"
 fi
 
 echo "Waiting up to $MAX_WAIT_MINS minutes for host reservation"
-echo "Require $N_MASTERS masters and $N_WORKERS workers $([ x"$REQUEST_BOOTSTRAP_HOST" == x"true" ] && echo -n '(+ 1 bootstrap node)') = $NUM_HOSTS hosts"
+echo "Require $N_MASTERS masters and $N_WORKERS workers $([ "$REQUEST_BOOTSTRAP_HOST" == "true" ] && echo -n '(+ 1 bootstrap node)') = $NUM_HOSTS hosts"
 echo "Build ID $BUILD_ID from user $BUILD_USER"
 
 LOCK="/tmp/reserved_file.lock"
@@ -77,15 +78,13 @@ function check_available_hosts() {
     flock -u "$LOCK_FD"
     return 1
   fi
-  # shellcheck disable=SC2001
-  FIRST_HOST=$(echo "${CANDIDATES_HOSTS[0]}" | sed 's/.*openshift-qe-0\([0-9]\{2,\}\).*$/\1/')
   return 0
 }
 
 function reserve_hosts() {
   local ROLE=$1
   local COUNT=$2
-  if [ x"$APPEND" != x"true" ]; then
+  if [ "$APPEND" != "true" ]; then
     echo "$CSV_COLUMNS" > "${BUILD_DIR}/${ROLE}.csv"
   fi
   for ((i=0; i<COUNT; i++)); do
@@ -108,18 +107,33 @@ done
 
 OUTPUT=()
 j=0
-if [ x"$APPEND" != x"true" ]; then
+if [ "$APPEND" != "true" ]; then
     echo "$CSV_COLUMNS" > "${BUILD_DIR}/hosts.csv"
 fi
 reserve_hosts "master" "$N_MASTERS"
 reserve_hosts "worker" "$N_WORKERS"
-[ x"$REQUEST_BOOTSTRAP_HOST" == x"true" ] && reserve_hosts "bootstrap" 1
+[ "$REQUEST_BOOTSTRAP_HOST" == "true" ] && reserve_hosts "bootstrap" 1
 printf '%s\n' "${OUTPUT[@]}" >> "$RESERVED_FILE"
 
-if [ x"$REQUEST_VIPS" == x"true" ]; then
+if [ "$REQUEST_VIPS" == "true" ]; then
     FIRST_HOST_ID=$(echo "${CANDIDATES_HOSTS[0]}" | cut -f3 -d,)
-    echo "{\"ingress_vip\": \"${INGRESS_VIPS_SUBNET_PREFIX:-192.168.82.}${FIRST_HOST_ID}\", \"api_vip\": \"${API_VIPS_SUBNET_PREFIX:-192.168.81.}${FIRST_HOST_ID}\"}" > "${BUILD_DIR}/vips.json"
+    FIRST_HOST_ID_HEX=$(printf '%03x' "$FIRST_HOST_ID")
+    
+    INGRESS_VIP="${INGRESS_VIPS_SUBNET_PREFIX:-192.168.82.}${FIRST_HOST_ID}"
+    API_VIP="${API_VIPS_SUBNET_PREFIX:-192.168.81.}${FIRST_HOST_ID}"
+    INGRESS_VIP_V6="${IPV6_INGRESS_VIPS_SUBNET_PREFIX:-fd99:2222:3456::2:}${FIRST_HOST_ID_HEX}"
+    API_VIP_V6="${IPV6_API_VIPS_SUBNET_PREFIX:-fd99:2222:3456::1:}${FIRST_HOST_ID_HEX}"
+    
+    # Create a single JSON object
+    echo "{
+  \"ingress_vip\": \"$INGRESS_VIP\",
+  \"api_vip\": \"$API_VIP\",
+  \"ingress_vip_v6\": \"$INGRESS_VIP_V6\",
+  \"api_vip_v6\": \"$API_VIP_V6\"
+}" > "${BUILD_DIR}/vips.json"
 fi
+
+
 echo "Releasing lock $LOCK_FD ($LOCK)"
 flock -u "$LOCK_FD"
 
@@ -127,7 +141,7 @@ yq -p csv -o yaml "${BUILD_DIR}/hosts.csv" > "${BUILD_DIR}/hosts.yaml"
 yq -p csv -o yaml "${BUILD_DIR}/worker.csv" > "${BUILD_DIR}/worker.yaml"
 yq -p csv -o yaml "${BUILD_DIR}/master.csv" > "${BUILD_DIR}/master.yaml"
 touch "${BUILD_DIR}/vips.yaml"
-if [ x"$REQUEST_VIPS" == x"true" ]; then
+if [ "$REQUEST_VIPS" == "true" ]; then
   yq -p json -o yaml "${BUILD_DIR}/vips.json" > "${BUILD_DIR}/vips.yaml"
 fi
 
