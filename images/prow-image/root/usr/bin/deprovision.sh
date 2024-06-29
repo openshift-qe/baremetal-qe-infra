@@ -44,14 +44,17 @@ echo "Running the post-installation steps..."
 set +e
 set -x
 bash ./dhcp-pxe-conf/baremetal-lab-post-dhcp-pxe-conf-commands.sh
-PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=22 bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
-PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=2222 bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
+for architecture in aarch64 amd64; do
+  [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
+  bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
+done
 bash ./wipe/baremetal-lab-post-wipe-commands.sh
 bash ./dns/baremetal-lab-post-dns-commands.sh
 bash ./firewall/baremetal-lab-post-firewall-commands.sh
 bash ./load-balancer/baremetal-lab-post-load-balancer-commands.sh
-# Execute twice as harmless and because we might not know which host is the provisioner
-PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=22 bash ./provisioning-network/baremetal-lab-post-provisioning-network-commands.sh
-PROVISIONING_HOST="${AUX_HOST}" PROVISIONING_HOST_SSH_PORT=2222 bash ./provisioning-network/baremetal-lab-post-provisioning-network-commands.sh
+for architecture in aarch64 amd64; do
+  [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
+  bash ./provisioning-network/baremetal-lab-post-provisioning-network-commands.sh
+done
 bash ./release-nodes/baremetal-lab-post-release-nodes-commands.sh
 exit 0
