@@ -18,8 +18,6 @@ VENDOR_REGEX=""
 
 if [ -n "$VENDOR" ]; then
   VENDOR_REGEX=",${VENDOR},"
-  # shellcheck disable=SC2086
-  echo $VENDOR_REGEX
 fi
 
 if [ -s /etc/hosts_pool_lock ]; then
