@@ -18,7 +18,7 @@ CLUSTER_PROFILE_DIR="/var/builds/$1"
 SHARED_DIR="/var/builds/$1"
 ARTIFACT_DIR="/var/builds/$1"
 SELF_MANAGED_NETWORK="true"
-FIREWALL="true"
+DISCONNECTED="true"
 PROVISIONING_NET_DEV="prov" # Remove this variable after https://github.com/openshift/release/pull/46960 is merged
 # End (exported) environment variables setup
 set +a
@@ -45,6 +45,7 @@ set +e
 set -x
 bash ./dhcp-pxe-conf/baremetal-lab-post-dhcp-pxe-conf-commands.sh
 for architecture in aarch64 amd64; do
+  export architecture="${architecture}"
   [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
   bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
 done
@@ -53,6 +54,7 @@ bash ./dns/baremetal-lab-post-dns-commands.sh
 bash ./firewall/baremetal-lab-post-firewall-commands.sh
 bash ./load-balancer/baremetal-lab-post-load-balancer-commands.sh
 for architecture in aarch64 amd64; do
+  export architecture="${architecture}"
   [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
   bash ./provisioning-network/baremetal-lab-post-provisioning-network-commands.sh
 done
