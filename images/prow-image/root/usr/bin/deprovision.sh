@@ -53,7 +53,7 @@ bash ./wipe/baremetal-lab-post-wipe-commands.sh
 bash ./dns/baremetal-lab-post-dns-commands.sh
 bash ./firewall/baremetal-lab-post-firewall-commands.sh
 bash ./load-balancer/baremetal-lab-post-load-balancer-commands.sh
-for architecture in aarch64 amd64; do
+for architecture in arm64 amd64; do
   export architecture="${architecture}"
   [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
   bash ./provisioning-network/baremetal-lab-post-provisioning-network-commands.sh
