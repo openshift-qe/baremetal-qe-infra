@@ -18,7 +18,7 @@ systemd:
         Wants=network-online.target
         [Service]
         Type=oneshot
-        ExecStartPre=-bash -c 'for i in $(lsblk -I8,259 -nd --output name); do wipefs -a /dev/$i; done'
+        ExecStartPre=-bash -c 'set -x; for i in $(lsblk -I8,259 -nd --output name); do wipefs -a /dev/$i*; done; set +x'
         ExecStartPre=-bash -c '/usr/sbin/efibootmgr -v | sed -nE "s|^Boot([0-9A-Fa-f]{4}).*HD\(.*$|\1|gp" | xargs -I% /usr/sbin/efibootmgr --delete-bootnum --bootnum %'
         ExecStart=/usr/bin/systemctl --no-block poweroff
         StandardOutput=kmsg+console
