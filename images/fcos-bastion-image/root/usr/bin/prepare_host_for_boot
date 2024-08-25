@@ -35,10 +35,19 @@ function ipmi_cmd() {
 }
 
 log "Powering off the host..."
-until ipmi_cmd power status | grep -i -q "Chassis Power is off"; do
-  log "Host is powered on: forcing power off..."
-  ipmi_cmd power off || true
-  sleep 30
+for i in {1..16}; do
+  if [ "${i}" -eq 16 ]; then
+    log "Exiting after $((i - 1)) retries"
+    exit 1
+  fi
+  if ! ipmi_cmd power status | grep -i -q "Chassis Power is off"; then
+    log "Attemp ${i}: Host is powered on: forcing power off..."
+    ipmi_cmd power off || true
+    sleep 30
+  else
+    log "Attemp ${i}: Host is powered off"
+    break
+  fi
 done
 
 if [[ "${ipxe_via_vmedia}" == "true" ]] && [[ "${BOOT_MODE}" == "pxe" ]]; then
