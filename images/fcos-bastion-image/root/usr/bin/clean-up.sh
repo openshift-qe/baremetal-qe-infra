@@ -35,7 +35,7 @@ do
   fi
   echo "<3>$cluster is more than 3 days old and not preserved, starting the pruning...."
   prune_nodes "$cluster"
-done < <(find /var/builds/ -maxdepth 1 -type d -mmin 1440+ -print0)
+done < <(find /var/builds/ -maxdepth 1 -type d -mmin +1440 -print0)
 
 # Clean up left over ports in the ovs switches that can span across multiple clusters
 for port in $(ovs-vsctl show  | grep "No such device" | sed -e 's/^.*device //' -e 's/ (No such.*$//')
