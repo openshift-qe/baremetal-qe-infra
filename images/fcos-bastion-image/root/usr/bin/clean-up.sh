@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo "<3>Starting the clean up process"
-echo "<2>Checking if any /var/builds/* folder container is older than 3 days and prune the related clusters"
-# Check if any /var/builds/* folder container is older than 3 days
+echo "<2>Checking if any /var/builds/* folder container is older than 24 hours and prune the related clusters"
+# Check if any /var/builds/* folder container is older than 24 hours
 while IFS= read -r -d '' cluster_folder
 do
   echo "<3>Deleting $cluster_folder"
@@ -33,7 +33,7 @@ do
     [ "${enddate}" -le "${nowdate}" ] && \
     echo "<3>$cluster no longer to be preserved"
   fi
-  echo "<3>$cluster is more than 3 days old and not preserved, starting the pruning...."
+  echo "<3>$cluster is more than 24 hours old and not preserved, starting the pruning...."
   prune_nodes "$cluster"
 done < <(find /var/builds/ -maxdepth 1 -type d -mmin +1440 -print0)
 

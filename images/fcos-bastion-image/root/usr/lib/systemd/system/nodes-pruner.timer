@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer to prune cluster nodes running longer than 3 days
+Description=Timer to prune cluster nodes running longer than 24 hour
 
 [Timer]
 OnCalendar=*-*-* *:02:00

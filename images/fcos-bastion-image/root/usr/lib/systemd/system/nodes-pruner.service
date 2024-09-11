@@ -1,12 +1,11 @@
 [Unit]
-Description=Service does a clean up of clusters running more than 3 days
+Description=Service does a clean up of clusters running more than 24 hours
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/clean-up.sh
 StandardOutput=journal
 StandardError=journal
-Type=oneshot
 RestartSec=10
 Restart=on-failure
 

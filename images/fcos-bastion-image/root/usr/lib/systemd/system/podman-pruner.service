@@ -1,0 +1,10 @@
+[Unit]
+Description=Service does a clean up of unused podman resources
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman system prune -af --volumes
+StandardOutput=journal
+StandardError=journal
+RestartSec=10
+Restart=on-failure
