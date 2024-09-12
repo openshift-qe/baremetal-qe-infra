@@ -32,11 +32,14 @@ http:
     key: /certs/domain.key
 storage:
   delete:
-    enabled: true
+    enabled: false
   cache:
     blobdescriptor: inmemory
   filesystem:
     rootdirectory: /var/lib/registry
+  maintenance:
+    readonly:
+      enabled: false
 auth:
   htpasswd:
     realm: Registry Realm
