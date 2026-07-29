@@ -12,3 +12,4 @@ enable fill-network-env.service
 enable nodes-pruner.timer
 enable clean-registries.timer
 enable sync-bm-capacity-tracker.service
+enable infra-dashboard.service

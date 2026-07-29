@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infra Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --blue: #58a6ff;
+  --purple: #bc8cff;
+  --cyan: #39d2c0;
+  --orange: #f0883e;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-left h1 {
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-left h1 svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--blue);
+}
+
+.hostname {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.conn-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s;
+}
+
+.conn-dot.live { background: var(--green); }
+
+.uptime-badge {
+  background: var(--surface2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-family: monospace;
+}
+
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title .count {
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+
+/* Host Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.metric-card .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.metric-card .value {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  margin-bottom: 8px;
+}
+
+.metric-card .sub {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gauge-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease, background 0.3s;
+}
+
+.disk-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.disk-item:last-child { margin-bottom: 0; }
+
+.disk-mount {
+  font-family: monospace;
+  font-size: 13px;
+  min-width: 80px;
+  color: var(--text-dim);
+}
+
+.disk-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disk-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.disk-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease, background 0.3s;
+}
+
+.disk-text {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-dim);
+  min-width: 110px;
+  text-align: right;
+}
+
+/* Container Grid */
+.container-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.container-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.container-card:hover {
+  border-color: var(--blue);
+}
+
+.container-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.container-name {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.health-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.health-healthy { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+.health-starting { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+.health-unhealthy { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+.health-none { background: rgba(139, 148, 158, 0.15); color: var(--text-dim); }
+.health-running { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+.health-exited { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+.health-created { background: rgba(139, 148, 158, 0.15); color: var(--text-dim); }
+
+.container-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.container-detail .key {
+  color: var(--text-dim);
+  min-width: 50px;
+  flex-shrink: 0;
+}
+
+.container-detail .val {
+  font-family: monospace;
+  word-break: break-all;
+  color: var(--text);
+}
+
+.container-detail .val.image {
+  color: var(--cyan);
+}
+
+.container-detail .val.ports {
+  color: var(--purple);
+}
+
+.container-id {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+
+/* Systemd Units */
+.units-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.units-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+.units-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: monospace;
+}
+
+.units-table tr:hover td {
+  background: var(--surface2);
+}
+
+.state-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.state-running { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+.state-active { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+.state-dead { background: rgba(139, 148, 158, 0.15); color: var(--text-dim); }
+.state-failed { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+.state-exited { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+.state-waiting { background: rgba(139, 148, 158, 0.15); color: var(--text-dim); }
+
+.units-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.units-filter {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+.units-filter input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: monospace;
+  outline: none;
+}
+
+.units-filter input:focus {
+  border-color: var(--blue);
+}
+
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-dim);
+  font-size: 16px;
+}
+
+.loading .spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { color: var(--text-dim); font-style: italic; padding: 20px; }
+
+@media (max-width: 768px) {
+  header { padding: 12px 16px; }
+  main { padding: 16px; }
+  .container-grid { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>
+      <svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0114 0M12 5a7 7 0 010 14M5 12h14M12 5v14M8.5 8.5l7 7M15.5 8.5l-7 7"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3"/></svg>
+      Infra Dashboard
+    </h1>
+    <span class="hostname" id="hostname">--</span>
+  </div>
+  <div class="header-right">
+    <span class="uptime-badge" id="uptime">--</span>
+    <span id="last-updated">--</span>
+    <span class="conn-status">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-text">Connecting...</span>
+    </span>
+  </div>
+</header>
+
+<main>
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div>Connecting to bastion host...</div>
+  </div>
+
+  <section id="metrics-section" style="display:none">
+    <div class="section-title">Host Metrics</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="label">CPU Usage</div>
+        <div class="value" id="cpu-value">--%</div>
+        <div class="sub" id="cpu-sub">-- cores | Load: --, --, --</div>
+        <div class="gauge-bar"><div class="gauge-fill" id="cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Memory</div>
+        <div class="value" id="mem-value">--%</div>
+        <div class="sub" id="mem-sub">-- / -- GB</div>
+        <div class="gauge-bar"><div class="gauge-fill" id="mem-bar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Disk Usage</div>
+        <div id="disks-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="containers-section" style="display:none">
+    <div class="section-title">Containers <span class="count" id="container-count">0</span></div>
+    <div class="container-grid" id="container-grid"></div>
+  </section>
+
+  <section id="units-section" style="display:none">
+    <div class="section-title">Systemd Services <span class="count" id="units-count">0</span></div>
+    <div class="units-wrapper">
+      <div class="units-filter">
+        <input type="text" id="units-search" placeholder="Filter services...">
+      </div>
+      <table class="units-table">
+        <thead>
+          <tr>
+            <th>Unit</th>
+            <th>Load</th>
+            <th>Active</th>
+            <th>Sub</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="units-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+(function() {
+  let ws = null;
+  let retryDelay = 1000;
+  let allUnits = [];
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+
+    ws.onopen = function() {
+      retryDelay = 1000;
+      setConnStatus(true);
+    };
+
+    ws.onmessage = function(e) {
+      try {
+        const data = JSON.parse(e.data);
+        render(data);
+      } catch(err) {
+        console.error('Parse error:', err);
+      }
+    };
+
+    ws.onclose = function() {
+      setConnStatus(false);
+      setTimeout(function() {
+        retryDelay = Math.min(retryDelay * 2, 30000);
+        connect();
+      }, retryDelay);
+    };
+
+    ws.onerror = function() { ws.close(); };
+  }
+
+  function setConnStatus(live) {
+    const dot = document.getElementById('conn-dot');
+    const txt = document.getElementById('conn-text');
+    if (live) {
+      dot.classList.add('live');
+      txt.textContent = 'Live';
+    } else {
+      dot.classList.remove('live');
+      txt.textContent = 'Reconnecting...';
+    }
+  }
+
+  function gaugeColor(pct) {
+    if (pct < 60) return 'var(--green)';
+    if (pct < 85) return 'var(--yellow)';
+    return 'var(--red)';
+  }
+
+  function healthClass(h, state) {
+    if (!h && state) {
+      const s = state.toLowerCase();
+      if (s === 'running') return 'health-running';
+      if (s === 'exited') return 'health-exited';
+      if (s === 'created') return 'health-created';
+      return 'health-none';
+    }
+    const v = (h || '').toLowerCase();
+    if (v === 'healthy') return 'health-healthy';
+    if (v === 'starting') return 'health-starting';
+    if (v === 'unhealthy') return 'health-unhealthy';
+    return 'health-none';
+  }
+
+  function healthLabel(h, state) {
+    if (h) return h;
+    if (state) return state;
+    return 'n/a';
+  }
+
+  function stateClass(s) {
+    const v = (s || '').toLowerCase();
+    if (v === 'running') return 'state-running';
+    if (v === 'active') return 'state-active';
+    if (v === 'dead') return 'state-dead';
+    if (v === 'failed') return 'state-failed';
+    if (v === 'exited') return 'state-exited';
+    return 'state-waiting';
+  }
+
+  function truncImage(img) {
+    const parts = img.split('/');
+    if (parts.length > 2) return '.../' + parts.slice(-2).join('/');
+    return img;
+  }
+
+  function render(data) {
+    document.getElementById('loading').style.display = 'none';
+
+    // Header
+    const host = data.host || {};
+    document.getElementById('hostname').textContent = host.hostname || '--';
+    document.getElementById('uptime').textContent = 'up ' + (host.uptime || '--');
+    document.getElementById('last-updated').textContent = new Date(data.timestamp).toLocaleTimeString();
+
+    // Metrics
+    document.getElementById('metrics-section').style.display = '';
+
+    const cpuPct = host.cpu_percent || 0;
+    document.getElementById('cpu-value').textContent = cpuPct.toFixed(1) + '%';
+    const la = host.load_avg || [0,0,0];
+    document.getElementById('cpu-sub').textContent =
+      (host.cpu_count || '--') + ' cores | Load: ' + la.map(function(v){return v.toFixed(2)}).join(', ');
+    const cpuBar = document.getElementById('cpu-bar');
+    cpuBar.style.width = cpuPct + '%';
+    cpuBar.style.background = gaugeColor(cpuPct);
+
+    const mem = host.memory || {};
+    const memPct = mem.percent || 0;
+    document.getElementById('mem-value').textContent = memPct.toFixed(1) + '%';
+    document.getElementById('mem-sub').textContent =
+      (mem.used_gb || 0) + ' / ' + (mem.total_gb || 0) + ' GB';
+    const memBar = document.getElementById('mem-bar');
+    memBar.style.width = memPct + '%';
+    memBar.style.background = gaugeColor(memPct);
+
+    const disksList = document.getElementById('disks-list');
+    const disks = host.disks || [];
+    let disksHtml = '';
+    for (let i = 0; i < disks.length; i++) {
+      const d = disks[i];
+      disksHtml += '<div class="disk-item">' +
+        '<span class="disk-mount">' + esc(d.mount) + '</span>' +
+        '<div class="disk-bar-wrap">' +
+          '<div class="disk-bar"><div class="disk-bar-fill" style="width:' + d.percent + '%;background:' + gaugeColor(d.percent) + '"></div></div>' +
+          '<span class="disk-text">' + esc(d.used) + ' / ' + esc(d.total) + ' (' + d.percent + '%)</span>' +
+        '</div>' +
+      '</div>';
+    }
+    disksList.innerHTML = disksHtml || '<div class="empty">No disks</div>';
+
+    // Containers
+    document.getElementById('containers-section').style.display = '';
+    const containers = data.containers || [];
+    document.getElementById('container-count').textContent = containers.length;
+    const grid = document.getElementById('container-grid');
+    let cHtml = '';
+    for (let i = 0; i < containers.length; i++) {
+      const c = containers[i];
+      const hc = healthClass(c.health, c.state);
+      const hl = healthLabel(c.health, c.state);
+      cHtml += '<div class="container-card">' +
+        '<div class="container-header">' +
+          '<span class="container-name">' + esc(c.name) + '</span>' +
+          '<span class="health-badge ' + hc + '">' + esc(hl) + '</span>' +
+        '</div>' +
+        '<div class="container-detail"><span class="key">Image</span><span class="val image" title="' + esc(c.image) + '">' + esc(truncImage(c.image)) + '</span></div>' +
+        '<div class="container-detail"><span class="key">Status</span><span class="val">' + esc(c.status) + '</span></div>' +
+        (c.ports ? '<div class="container-detail"><span class="key">Ports</span><span class="val ports">' + esc(c.ports) + '</span></div>' : '') +
+        '<div class="container-id">' + esc(c.id) + '</div>' +
+      '</div>';
+    }
+    grid.innerHTML = cHtml || '<div class="empty">No containers running</div>';
+
+    // Systemd units
+    document.getElementById('units-section').style.display = '';
+    allUnits = data.systemd_units || [];
+    document.getElementById('units-count').textContent = allUnits.length;
+    renderUnits();
+  }
+
+  function renderUnits() {
+    const filter = (document.getElementById('units-search').value || '').toLowerCase();
+    const tbody = document.getElementById('units-tbody');
+    let html = '';
+    let shown = 0;
+    for (let i = 0; i < allUnits.length; i++) {
+      const u = allUnits[i];
+      if (filter && u.name.toLowerCase().indexOf(filter) === -1 &&
+          (u.description || '').toLowerCase().indexOf(filter) === -1) continue;
+      shown++;
+      html += '<tr>' +
+        '<td>' + esc(u.name) + '</td>' +
+        '<td>' + esc(u.load) + '</td>' +
+        '<td><span class="state-badge ' + stateClass(u.active) + '">' + esc(u.active) + '</span></td>' +
+        '<td><span class="state-badge ' + stateClass(u.sub) + '">' + esc(u.sub) + '</span></td>' +
+        '<td style="color:var(--text-dim);font-family:sans-serif">' + esc(u.description || '') + '</td>' +
+      '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="5" class="empty">No matching services</td></tr>';
+  }
+
+  document.getElementById('units-search').addEventListener('input', renderUnits);
+
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>

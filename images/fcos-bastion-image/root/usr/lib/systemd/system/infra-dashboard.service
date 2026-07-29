@@ -1,0 +1,14 @@
+[Unit]
+Description=Infra Dashboard - Bastion host service status web view
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/share/infra-dashboard
+ExecStart=/usr/bin/python3 -m uvicorn app:app --host 0.0.0.0 --port 9191
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
