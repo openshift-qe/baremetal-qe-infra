@@ -39,15 +39,17 @@ async def websocket_endpoint(ws: WebSocket):
 
 async def collect_all() -> dict:
     loop = asyncio.get_event_loop()
-    containers, units, host = await asyncio.gather(
+    containers, units, host, prow_jobs = await asyncio.gather(
         loop.run_in_executor(None, get_containers),
         loop.run_in_executor(None, get_systemd_units),
         loop.run_in_executor(None, get_host_metrics),
+        loop.run_in_executor(None, get_prow_jobs),
     )
     return {
         "containers": containers,
         "systemd_units": units,
         "host": host,
+        "prow_jobs": prow_jobs,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -74,7 +76,7 @@ def get_containers() -> list[dict]:
         if isinstance(name, list):
             name = name[0] if name else "unknown"
         if name.startswith("haproxy"):
-            continue
+            continue  # shown in prow_jobs section instead
         health = ""
         if isinstance(c.get("Health"), dict):
             health = c["Health"].get("Status", "")
@@ -108,6 +110,73 @@ def get_containers() -> list[dict]:
             "state": c.get("State", ""),
         })
     return results
+
+
+BUILDS_DIR = Path("/var/builds")
+PROW_URL_PREFIX = "https://prow.ci.openshift.org/view/"
+
+
+def get_prow_jobs() -> list[dict]:
+    if not BUILDS_DIR.is_dir():
+        return []
+    running = _run(["podman", "ps", "--format", "{{.Names}}\\t{{.Status}}"])
+    running_namespaces = {}
+    for line in running.strip().splitlines():
+        parts = line.split("\t", 1)
+        name = parts[0]
+        status = parts[1] if len(parts) > 1 else ""
+        if name.startswith("haproxy-"):
+            running_namespaces[name.removeprefix("haproxy-")] = status
+    jobs = []
+    for d in sorted(BUILDS_DIR.iterdir()):
+        if not d.is_dir() or not d.name.startswith("ci-op-"):
+            continue
+        ns = d.name
+        if ns not in running_namespaces:
+            continue
+        env_file = d / "prow.env"
+        if not env_file.exists():
+            continue
+        env = _parse_env_file(env_file)
+        job_name = env.get("JOB_NAME", "")
+        build_id = env.get("BUILD_ID", "")
+        job_type = env.get("JOB_TYPE", "")
+        repo_owner = env.get("REPO_OWNER", "")
+        repo_name = env.get("REPO_NAME", "")
+        pull_number = env.get("PULL_NUMBER", "")
+        job_url = env.get("JOB_URL", "")
+        if job_url and not job_url.startswith("http"):
+            job_url = ""
+        if not job_url and build_id and job_name:
+            if pull_number and repo_owner and repo_name:
+                job_url = f"{PROW_URL_PREFIX}gs/test-platform-results/pr-logs/pull/{repo_owner}_{repo_name}/{pull_number}/{job_name}/{build_id}"
+            else:
+                job_url = f"{PROW_URL_PREFIX}gs/test-platform-results/logs/{job_name}/{build_id}"
+        jobs.append({
+            "namespace": ns,
+            "job_name": job_name,
+            "job_name_safe": env.get("JOB_NAME_SAFE", ""),
+            "build_id": build_id,
+            "job_type": job_type,
+            "repo": f"{repo_owner}/{repo_name}" if repo_owner else "",
+            "pull_number": pull_number,
+            "job_url": job_url,
+            "duration": running_namespaces.get(ns, ""),
+            "active": ns in running_namespaces,
+        })
+    return jobs
+
+
+def _parse_env_file(path: Path) -> dict:
+    env = {}
+    try:
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.startswith("#"):
+                key, _, val = line.partition("=")
+                env[key.strip()] = val.strip()
+    except Exception:
+        pass
+    return env
 
 
 def get_systemd_units() -> list[dict]:

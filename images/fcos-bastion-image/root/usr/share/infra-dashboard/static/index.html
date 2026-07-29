@@ -405,6 +405,89 @@ main {
 
 .empty { color: var(--text-dim); font-style: italic; padding: 20px; }
 
+/* Prow Jobs */
+.prow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.prow-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+.prow-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.prow-table tr:hover td {
+  background: var(--surface2);
+}
+
+.prow-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.prow-job-name {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.prow-job-link {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.prow-job-link:hover {
+  text-decoration: underline;
+}
+
+.prow-namespace {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.prow-repo {
+  color: var(--cyan);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.prow-pr {
+  color: var(--purple);
+  font-family: monospace;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.type-periodic { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+.type-presubmit { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
+.type-postsubmit { background: rgba(240, 136, 62, 0.15); color: var(--orange); }
+.type-batch { background: rgba(57, 210, 192, 0.15); color: var(--cyan); }
+
 @media (max-width: 768px) {
   header { padding: 12px 16px; }
   main { padding: 16px; }
@@ -464,6 +547,26 @@ main {
   <section id="containers-section" style="display:none">
     <div class="section-title">Containers <span class="count" id="container-count">0</span></div>
     <div class="container-grid" id="container-grid"></div>
+  </section>
+
+  <section id="prow-section" style="display:none">
+    <div class="section-title">Prow Jobs <span class="count" id="prow-count">0</span></div>
+    <div class="prow-wrapper">
+      <table class="prow-table">
+        <thead>
+          <tr>
+            <th>Job Name</th>
+            <th>Type</th>
+            <th>Repo</th>
+            <th>PR</th>
+            <th>Duration</th>
+            <th>Namespace</th>
+            <th>Prow</th>
+          </tr>
+        </thead>
+        <tbody id="prow-tbody"></tbody>
+      </table>
+    </div>
   </section>
 
   <section id="units-section" style="display:none">
@@ -646,11 +749,57 @@ main {
     }
     grid.innerHTML = cHtml || '<div class="empty">No containers running</div>';
 
+    // Prow Jobs
+    var prowJobs = data.prow_jobs || [];
+    if (prowJobs.length > 0) {
+      document.getElementById('prow-section').style.display = '';
+      document.getElementById('prow-count').textContent = prowJobs.length;
+      renderProwJobs(prowJobs);
+    } else {
+      document.getElementById('prow-section').style.display = 'none';
+    }
+
     // Systemd units
     document.getElementById('units-section').style.display = '';
     allUnits = data.systemd_units || [];
     document.getElementById('units-count').textContent = allUnits.length;
     renderUnits();
+  }
+
+  function jobTypeClass(t) {
+    var v = (t || '').toLowerCase();
+    if (v === 'periodic') return 'type-periodic';
+    if (v === 'presubmit') return 'type-presubmit';
+    if (v === 'postsubmit') return 'type-postsubmit';
+    if (v === 'batch') return 'type-batch';
+    return '';
+  }
+
+  function renderProwJobs(jobs) {
+    var tbody = document.getElementById('prow-tbody');
+    var html = '';
+    for (var i = 0; i < jobs.length; i++) {
+      var j = jobs[i];
+      var nameCell = j.job_name_safe || j.job_name || '--';
+      var linkCell = '';
+      if (j.job_url) {
+        linkCell = '<a class="prow-job-link" href="' + esc(j.job_url) + '" target="_blank" rel="noopener">View</a>';
+      }
+      var prCell = '';
+      if (j.pull_number) {
+        prCell = '<span class="prow-pr">#' + esc(j.pull_number) + '</span>';
+      }
+      html += '<tr>' +
+        '<td class="prow-job-name">' + esc(nameCell) + '</td>' +
+        '<td><span class="type-badge ' + jobTypeClass(j.job_type) + '">' + esc(j.job_type || '--') + '</span></td>' +
+        '<td><span class="prow-repo">' + esc(j.repo || '--') + '</span></td>' +
+        '<td>' + prCell + '</td>' +
+        '<td style="font-family:monospace;color:var(--text-dim)">' + esc(j.duration || '--') + '</td>' +
+        '<td><span class="prow-namespace">' + esc(j.namespace) + '</span></td>' +
+        '<td>' + linkCell + '</td>' +
+      '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" class="empty">No active Prow jobs</td></tr>';
   }
 
   function renderUnits() {
