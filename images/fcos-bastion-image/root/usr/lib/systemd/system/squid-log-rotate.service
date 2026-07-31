@@ -1,0 +1,9 @@
+[Unit]
+Description=Rotate squid proxy log files
+After=squid-proxy.service
+Requires=squid-proxy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman exec squid-proxy squid -k rotate
+RemainAfterExit=no
