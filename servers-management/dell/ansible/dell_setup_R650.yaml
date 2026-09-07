@@ -1,0 +1,118 @@
+---
+- hosts: idrac
+  connection: local
+  name: Dell Server Management
+  gather_facts: False
+  vars_files:
+  - idrac_vars.yaml
+  environment: "{{proxy_env}}"
+
+  tasks:
+
+  - name: Reset BIOS attributes to default settings, parallel execution
+    dellemc.openmanage.idrac_bios:
+      idrac_ip: "{{ item }}"
+      idrac_user: "{{ idrac_user }}"
+      idrac_password: "{{ idrac_password }}"
+      validate_certs: False
+      reset_bios: true
+    with_items: "{{ groups['idrac'] }}"
+    register: _create_instances
+    async: 600  # Maximum runtime in seconds. Adjust as needed.
+    poll: 0  # Fire and continue (never poll)
+    tags:
+      - reset_bios
+
+  - name: Wait for BIOS reset jobs to finish
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    register: _jobs
+    until: _jobs.finished
+    delay: 120  # Check every 120 seconds. Adjust as you like.
+    retries: 10  # Retry up to 10 times. Adjust as needed.
+    with_items: "{{ _create_instances.results }}"
+    tags:
+      - parallel
+
+  - name: Enable PXE 1 and 2, Disable PXE 3 and 4
+    dellemc.openmanage.idrac_bios:
+        idrac_ip: "{{ item }}"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_password }}"
+        validate_certs: False
+        attributes:
+          PxeDev1EnDis: "Enabled"
+          PxeDev2EnDis: "Enabled"
+          PxeDev3EnDis: "Disabled"
+          PxeDev4EnDis: "Disabled"
+    with_items: "{{ groups['idrac'] }}"
+    tags:
+      - pxeconfig_enable_devices
+
+  - name: Configure PXE Device 1 to boot from Embedded Nic 1 Port 1 Partition 1
+    dellemc.openmanage.idrac_bios:
+        idrac_ip: "{{ item }}"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_password }}"
+        validate_certs: False
+        attributes:
+          PxeDev1Interface: "{{ nic_baremetal }}" # ref: https://issues.redhat.com/browse/OCPQE-18907
+          PxeDev1Protocol: "IPv4"
+          PxeDev1VlanEnDis: "Disabled"
+    with_items: "{{ groups['idrac'] }}"
+    tags:
+      - pxeconfig_dev1_baremetal
+
+  - name: Configure PXE Device 2 to PXE boot from Embedded Nic 2 Port 1 Partition 1
+    dellemc.openmanage.idrac_bios:
+        idrac_ip: "{{ item }}"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_password }}"
+        validate_certs: False
+        attributes:
+          PxeDev2Interface: "{{ nic_provisioning }}" # ref: https://issues.redhat.com/browse/OCPQE-18907
+          PxeDev2Protocol: "IPv4"
+          PxeDev2VlanEnDis: "Disabled"
+    with_items: "{{ groups['idrac'] }}"
+    tags:
+      - pxeconfig_dev2_provisioning
+
+
+
+  - name: Configure Bios Generic Attributes # ref: https://issues.redhat.com/browse/OCPQE-18907
+    # Boot mode: UEFI
+    # TPM off
+    # Performance hardware profile
+    # Virtualization technology enabled
+    # SR-IOV enabled
+    # Hard-disk Drive Placeholder disabled
+    dellemc.openmanage.idrac_bios:
+        idrac_ip: "{{ item }}"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_password }}"
+        validate_certs: False
+        attributes:
+          BootMode: "Uefi"
+          TpmSecurity: "Off"
+          SysProfile: "PerfOptimized"
+          ProcVirtualization: "Enabled"
+          SriovGlobalEnable: "Enabled"
+          HddPlaceholder: "Disabled"
+    with_items: "{{ groups['idrac'] }}"
+    tags:
+      - bios_config
+
+  - name: Configure Boot Sources
+    dellemc.openmanage.idrac_boot:
+      idrac_ip: "{{ item }}"
+      idrac_user: "{{ idrac_user }}"
+      idrac_password: "{{ idrac_password }}"
+      validate_certs: False
+      boot_options:
+        - boot_option_reference: "NIC.PxeDevice.1-1"
+          enabled: false
+        - boot_option_reference: "NIC.PxeDevice.2-1"
+          enabled: false
+    with_items: "{{ groups['idrac'] }}"
+    tags:
+      - boot_sources
